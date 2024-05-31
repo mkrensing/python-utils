@@ -1,8 +1,9 @@
 import os
 from functools import wraps
 from flask import Flask, Response
-init_service_functions = []
 import json
+
+init_service_functions = []
 
 
 def init_service(init_service_function):
@@ -27,27 +28,30 @@ def init_endpoint(init_function):
     init_endpoint_functions.append(init_function)
 
 
-def inject_environment(environment_variables : {}):
+def inject_environment(environment_variables : {}, required=False):
 
     def wrapper(init_function):
 
         @wraps(init_function)
         def decorator(*args, **kwargs):
-            environment_values = lookup_environment_variables(environment_variables)
+            environment_values = lookup_environment_variables(environment_variables, required)
             return init_function(*environment_values, **kwargs)
+
         return decorator
+
     return wrapper
 
 
-def lookup_environment_variables(environment_variables : []) -> []:
+def lookup_environment_variables(environment_variables : [], required: bool) -> []:
+
     values = []
     for environment_variable_name in environment_variables:
-        values.append(os.getenv(key=environment_variable_name, default=environment_variables[environment_variable_name]))
+        value = os.getenv(key=environment_variable_name, default=environment_variables[environment_variable_name])
+        if not value and required:
+            raise Exception(f"Missing {environment_variable_name}")
+        values.append(value)
 
     return values
-
-
-
 
 
 def object_to_json(object):
@@ -61,6 +65,12 @@ def response_json(object):
     return response
 
 
+def response_text(text: str):
+    response = Response(text, mimetype='text/plain')
+    response.headers["Content-Type"] = "text/plain; charset=utf-8"
+    return response
+
+
 def response_cookie(cookie_name: str, cookie_value: str):
     response = Response()
     response.headers["Content-Type"] = "application/json; charset=utf-8"
@@ -69,12 +79,16 @@ def response_cookie(cookie_name: str, cookie_value: str):
 
 
 def lookup_file(relative_path: str) -> str:
-    return os.path.abspath(relative_path)
+    script_directory = os.path.dirname(os.path.realpath(__file__))
+    return os.path.abspath(f"{script_directory}/{relative_path}")
 
 
-def lookup_directory(relative_path: str):
-    directory=os.path.abspath(relative_path)
-    if not os.path.isdir(directory):
+def lookup_directory(relative_path: str, ignore_not_found=False):
+    directory=lookup_file(relative_path)
+    if not os.path.isdir(directory) and not ignore_not_found:
         raise Exception(f"Directory not found: {directory}")
+
     return directory
+
+
 
