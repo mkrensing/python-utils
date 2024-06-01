@@ -12,10 +12,12 @@ def __schedule_task():
         schedule.run_pending()
         time.sleep(1)
 
+
 def stop_scheduler():
     print("stop scheduler...")
     global scheduler_running
-    scheduler_running=False
+    scheduler_running = False
+
 
 def scheduled_task(interval_minutes):
     global scheduler_running
@@ -27,6 +29,7 @@ def scheduled_task(interval_minutes):
     def wrapper(func):
         print(f"Register for scheduler with interval [{interval_minutes}]: {str(func)}")
         schedule.every(interval_minutes).minutes.do(func)
+
         @wraps(func)
         def decorator(*args, **kwargs):
             return func(*args, **kwargs)
@@ -34,6 +37,3 @@ def scheduled_task(interval_minutes):
         return decorator
 
     return wrapper
-
-
-
