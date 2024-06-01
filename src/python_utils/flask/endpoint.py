@@ -1,4 +1,4 @@
-from flask import Flask, Response, Blueprint
+from flask import Flask, Response, Blueprint, send_from_directory
 from typing import Dict, Tuple
 from python_utils.file import lookup_directory
 
@@ -18,6 +18,9 @@ class Endpoint(Blueprint):
 
         super().__init__(name=self.get_endpoint_name(url_prefix), import_name=__name__, url_prefix=url_prefix, static_folder=static_folder)
         register_endpoint(self)
+
+    def send_file(self, sub_directory: str, filename: str) -> Response:
+        return send_from_directory(directory=f"{self.static_folder}/{sub_directory}", path=filename)
 
     @staticmethod
     def get_endpoint_name(url_prefix: str) -> str:
