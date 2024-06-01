@@ -82,7 +82,7 @@ def response_cookie(cookie_name: str, cookie_value: str) -> Response:
 
 
 def object_to_json(some_object: Dict) -> bytes:
-    return json.dumps(object, ensure_ascii=False, indent=2, sort_keys=True).encode(encoding='utf-8')
+    return json.dumps(some_object, ensure_ascii=False, indent=2, sort_keys=True).encode(encoding='utf-8')
 
 
 def response_error(error_code, text) -> Tuple[Response, int]:
