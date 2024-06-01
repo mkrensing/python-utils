@@ -1,5 +1,6 @@
 from flask import Flask, Response, Blueprint
 from typing import Dict, Tuple
+from python_utils.file import lookup_directory
 
 import json
 
@@ -11,8 +12,11 @@ destroy_endpoint_functions = []
 
 class Endpoint(Blueprint):
 
-    def __init__(self, url_prefix: str):
-        super().__init__(name=f"{url_prefix.replace('/', '')}_endpoint", import_name=__name__, url_prefix=url_prefix)
+    def __init__(self, url_prefix: str, static_folder: str = ""):
+        if static_folder:
+            static_folder = lookup_directory(static_folder)
+
+        super().__init__(name=f"{url_prefix.replace('/', '')}_endpoint", import_name=__name__, url_prefix=url_prefix, static_folder=static_folder)
         register_endpoint(self)
 
 
