@@ -28,9 +28,9 @@ def path_until_last_match(path: str, match: str) -> str:
     return path[:position]
 
 
-@inject_environment({"APPLICATION_PATH": lookup_application_path()})
+@inject_environment({"APPLICATION_PATH": ""})
 def get_application_path(application_path: str) -> str:
-    return application_path
+    return application_path or lookup_application_path()
 
 
 def lookup_file(relative_path: str) -> str:
