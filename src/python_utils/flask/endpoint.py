@@ -16,8 +16,16 @@ class Endpoint(Blueprint):
         if static_folder:
             static_folder = lookup_directory(static_folder)
 
-        super().__init__(name=f"{url_prefix.replace('/', '')}_endpoint", import_name=__name__, url_prefix=url_prefix, static_folder=static_folder)
+        super().__init__(name=self.get_endpoint_name(url_prefix), import_name=__name__, url_prefix=url_prefix, static_folder=static_folder)
         register_endpoint(self)
+
+    @staticmethod
+    def get_endpoint_name(url_prefix: str) -> str:
+        return f"{Endpoint.get_endpoint_id(url_prefix)}_endpoint"
+
+    @staticmethod
+    def get_endpoint_id(url_prefix: str) -> str:
+        return url_prefix.replace('/', '') or "main"
 
 
 def init_service(init_service_function):
