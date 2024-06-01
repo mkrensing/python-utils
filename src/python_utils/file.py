@@ -10,7 +10,7 @@ def lookup_application_path() -> str:
         return os.path.dirname(sys.executable)
 
     this_script_directory = os.path.dirname(os.path.realpath(__file__))
-    return f"{this_script_directory}/../../"
+    return f"{this_script_directory}/../../../.."
 
 
 @inject_environment({"APPLICATION_PATH": lookup_application_path()})
