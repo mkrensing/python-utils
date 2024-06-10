@@ -16,10 +16,7 @@ def lookup_application_path() -> str:
     if getattr(sys, 'frozen', False):
         FOUND_APPLICATION_PATH = os.path.dirname(sys.executable)
     else:
-        this_script_directory = os.path.dirname(os.path.realpath(__file__))
-        FOUND_APPLICATION_PATH = os.path.realpath(path_until_last_match(this_script_directory, "venv"))
-        if not FOUND_APPLICATION_PATH:
-            FOUND_APPLICATION_PATH = os.path.dirname(sys.argv[0])
+        FOUND_APPLICATION_PATH = os.path.dirname(sys.argv[0])
 
     return FOUND_APPLICATION_PATH
 
