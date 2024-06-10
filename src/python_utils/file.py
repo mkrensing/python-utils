@@ -5,6 +5,7 @@ import sys
 
 FOUND_APPLICATION_PATH: str = ""
 
+
 def lookup_application_path() -> str:
     global FOUND_APPLICATION_PATH
 
@@ -38,9 +39,9 @@ def lookup_file(relative_path: str) -> str:
     return os.path.abspath(f"{application_path}/{relative_path}")
 
 
-def lookup_directory(relative_path: str):
+def lookup_directory(relative_path: str, ignore_not_found=False):
     directory = lookup_file(relative_path)
-    if not os.path.isdir(directory):
+    if not os.path.isdir(directory) and not ignore_not_found:
         raise Exception(f"Directory not found: {directory}")
 
     return directory
