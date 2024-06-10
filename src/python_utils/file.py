@@ -30,6 +30,7 @@ def find_directory_containing_file(current_path: str, filename: str) -> str:
         parent_path = os.path.dirname(current_path)
         if parent_path == current_path:
             return None # Root reached
+        current_path = parent_path
 
 def contains(path: str, match: str) -> bool:
     return path.rfind(match) > -1
