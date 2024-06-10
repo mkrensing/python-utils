@@ -1,4 +1,4 @@
-from flask import Flask, Response, Blueprint, send_from_directory
+from flask import Flask, Response, Blueprint, send_from_directory, request
 from typing import Dict, Tuple
 from python_utils.file import lookup_directory
 
@@ -70,9 +70,6 @@ def destroy_endpoint(destroy_function):
     destroy_endpoint_functions.append(destroy_function)
 
 
-
-
-
 def response_json(some_object) -> Response:
     response = Response(object_to_json(some_object), mimetype='application/json')
     response.headers["Content-Type"] = "application/json; charset=utf-8"
@@ -113,4 +110,25 @@ def response_html(html):
 def response_csv(csv):
     response = Response(csv, mimetype='text/csv', content_type='"text/csv; charset=utf-16"')
     response.headers["Access-Control-Allow-Origin"] = "http://localhost:4210"
+    return response
+
+
+def response_jsonp(json_text: str):
+    callback_function_name = request.args.get('callback', 'jsonp_callback')
+    jsonp = f"{callback_function_name}({json_text});"
+
+    response = Response(jsonp.encode(encoding='utf-8'), mimetype='application/javascript')
+    response.headers["Content-Type"] = "application/javascript; charset=utf-8"
+
+    return response
+
+
+def response_jsonp_error(error_code: int, exception):
+    callback_function_name = request.args.get('callback', 'callback')
+    error_json = {"error": str(exception), "error_code": error_code}
+    jsonp = f"{callback_function_name}({error_json});"
+
+    response = Response(jsonp.encode(encoding='utf-8'), mimetype='application/javascript')
+    response.headers["Content-Type"] = "application/javascript; charset=utf-8"
+
     return response
