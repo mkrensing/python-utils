@@ -16,13 +16,20 @@ def lookup_application_path() -> str:
     if getattr(sys, 'frozen', False):
         FOUND_APPLICATION_PATH = os.path.dirname(sys.executable)
     else:
-        this_script_directory = os.path.dirname(os.path.realpath(__file__))
-        if contains(this_script_directory, "venv"):
-            FOUND_APPLICATION_PATH = os.path.realpath(path_until_last_match(this_script_directory, "venv"))
-        else:
+        FOUND_APPLICATION_PATH = find_directory_containing_file(os.path.dirname(sys.argv[0]), "requirements.txt")
+        if not FOUND_APPLICATION_PATH:
             FOUND_APPLICATION_PATH = os.path.dirname(sys.argv[0])
 
     return FOUND_APPLICATION_PATH
+
+def find_directory_containing_file(current_path: str, filename: str) -> str:
+    while True:
+        file_candidate = os.path.join(current_path, filename)
+        if os.path.isfile(file_candidate):
+            return current_path
+        parent_path = os.path.dirname(current_path)
+        if parent_path == current_path:
+            return None # Root reached
 
 def contains(path: str, match: str) -> bool:
     return path.rfind(match) > -1
