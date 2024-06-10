@@ -16,10 +16,16 @@ def lookup_application_path() -> str:
     if getattr(sys, 'frozen', False):
         FOUND_APPLICATION_PATH = os.path.dirname(sys.executable)
     else:
-        FOUND_APPLICATION_PATH = os.path.dirname(sys.argv[0])
+        this_script_directory = os.path.dirname(os.path.realpath(__file__))
+        if contains(this_script_directory, "venv"):
+            FOUND_APPLICATION_PATH = os.path.realpath(path_until_last_match(this_script_directory, "venv"))
+        else:
+            FOUND_APPLICATION_PATH = os.path.dirname(sys.argv[0])
 
     return FOUND_APPLICATION_PATH
 
+def contains(path: str, match: str) -> bool:
+    return path.rfind(match) > -1
 
 def path_until_last_match(path: str, match: str) -> str:
     position = path.rfind(match)
