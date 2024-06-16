@@ -10,7 +10,7 @@ def get_shared_data():
 
 class GlobalDataStore:
 
-    def __init__(self, port: int = 120000):
+    def __init__(self, port: int = 12000):
         FlaskShareSyncManager.register("shared_data", get_shared_data)
         self.manager = FlaskShareSyncManager(("127.0.0.1", port), authkey='password'.encode('utf-8'))
         self.shared_data = None
