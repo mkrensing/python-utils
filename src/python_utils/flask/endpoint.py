@@ -1,3 +1,5 @@
+import atexit
+
 from flask import Flask, Response, Blueprint, send_from_directory, request
 from typing import Dict, Tuple
 from python_utils.file import lookup_directory
@@ -58,6 +60,12 @@ def init_endpoints(flask: Flask):
 
 def init_endpoint(init_function):
     init_endpoint_functions.append(init_function)
+
+
+def destroy_endpoints_on_exit(flask: Flask):
+    import signal
+    signal.signal(signal.SIGTERM, lambda *x: destroy_endpoints(flask))
+    atexit.register(lambda *x: destroy_endpoints(flask))
 
 
 def destroy_endpoints(flask: Flask):
