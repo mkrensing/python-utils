@@ -4,6 +4,7 @@ from multiprocessing.managers import SyncManager
 from typing import Dict, Any, List
 import inspect
 
+
 class FlaskShareSyncManager(SyncManager):
     pass
 
@@ -50,8 +51,8 @@ class SharedDataProxyDict(MutableMapping):
         self.name = name
         self.global_data_store = global_data_store
 
-    def get_data(self):
-        return self.global_data_store.get_data(self.name, {})
+    def get_data(self) -> Dict:
+        return dict(self.global_data_store.get_data(self.name, {}))
 
     def __getitem__(self, key):
         return self.get_data().get(key)
@@ -78,14 +79,18 @@ class SharedDataProxyDict(MutableMapping):
         # Fetch all data for a representation
         return repr(self.get_data())
 
+    def __contains__(self, key) -> bool:
+        print(f"get_data: {self.get_data()}")
+        return key in self.get_data()
+
 
 class SharedDataProxyList(MutableSequence):
     def __init__(self, name: str, global_data_store: GlobalDataStore):
         self.name = name
         self.global_data_store = global_data_store
 
-    def get_data(self):
-        return self.global_data_store.get_data(self.name, [])
+    def get_data(self) -> List:
+        return list(self.global_data_store.get_data(self.name, []))
 
     def __getitem__(self, index):
         return self.get_data()[index]
@@ -113,10 +118,14 @@ class SharedDataProxyList(MutableSequence):
         data = self.get_data()
         return repr(data)
 
+    def __contains__(self, key) -> bool:
+        return key in self.get_data()
+
 
 def get_unique_id() -> str:
     caller_frame_info = inspect.stack()[2]
     return f"{caller_frame_info.filename}_{caller_frame_info.lineno}"
+
 
 def shared_dict() -> Dict:
     return SharedDataProxyDict(name=get_unique_id(), global_data_store=my_global_data_share)
@@ -135,12 +144,11 @@ class GlobalDataShareContext:
         self.global_data_store.connnect()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        #destroy_global_data_share_on_exit()
+        # destroy_global_data_share_on_exit()
         pass
 
 
 def global_data_share(start_global_data_share_server: bool) -> GlobalDataShareContext:
-
     if start_global_data_share_server:
         init_global_data_share()
 
@@ -150,8 +158,10 @@ def global_data_share(start_global_data_share_server: bool) -> GlobalDataShareCo
 def init_global_data_share():
     my_global_data_share.start()
 
+
 def destroy_global_data_share():
     my_global_data_share.stop()
+
 
 def destroy_global_data_share_on_exit():
     import signal
