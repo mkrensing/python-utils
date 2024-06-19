@@ -80,7 +80,6 @@ class SharedDataProxyDict(MutableMapping):
         return repr(self.get_data())
 
     def __contains__(self, key) -> bool:
-        print(f"get_data: {self.get_data()}")
         return key in self.get_data()
 
 
