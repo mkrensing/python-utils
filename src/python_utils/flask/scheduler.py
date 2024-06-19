@@ -17,7 +17,7 @@ def stop_scheduler():
     del scheduler_running["running"]
 
 
-def scheduled_task(interval_minutes):
+def scheduled_task(interval_minutes, execute_at_start=False):
     if "running" in scheduler_running:
         def wrapper(func):
             @wraps(func)
@@ -35,6 +35,8 @@ def scheduled_task(interval_minutes):
     def wrapper(func):
         print(f"Register for scheduler with interval [{interval_minutes}]: {str(func)}")
         schedule.every(interval_minutes).minutes.do(func)
+        if execute_at_start:
+            func()
 
         @wraps(func)
         def decorator(*args, **kwargs):
