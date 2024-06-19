@@ -4,5 +4,6 @@ flask_caching
 cryptography
 
 tinydb
+filelock
 requests
 schedule
