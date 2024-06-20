@@ -15,10 +15,14 @@ destroy_endpoint_functions = []
 class Endpoint(Blueprint):
 
     def __init__(self, url_prefix: str, static_folder: str = ""):
+
+        endpoint_name = self.get_endpoint_name(url_prefix)
+        print(f"Loading Endpoint {endpoint_name}")
+
         if static_folder:
             static_folder = lookup_directory(static_folder)
 
-        super().__init__(name=self.get_endpoint_name(url_prefix), import_name=__name__, url_prefix=url_prefix, static_folder=static_folder)
+        super().__init__(name=endpoint_name, import_name=__name__, url_prefix=url_prefix, static_folder=static_folder)
         register_endpoint(self)
 
     def send_file(self, sub_directory: str, filename: str) -> Response:

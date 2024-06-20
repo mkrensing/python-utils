@@ -64,8 +64,9 @@ class SharedDataProxyDict(MutableMapping):
 
     def __delitem__(self, key):
         stored_dict = self.get_data()
-        del stored_dict[key]
-        self.global_data_store.update(self.name, stored_dict)
+        if key in stored_dict:
+            del stored_dict[key]
+            self.global_data_store.update(self.name, stored_dict)
 
     def __iter__(self):
         # Fetch all keys by getting the entire dataset (assuming there's a method to get all keys)
@@ -101,8 +102,9 @@ class SharedDataProxyList(MutableSequence):
 
     def __delitem__(self, index):
         data = self.get_data()
-        del data[index]
-        self.global_data_store.update(self.name, data)
+        if index in data:
+            del data[index]
+            self.global_data_store.update(self.name, data)
 
     def __len__(self):
         data = self.get_data()
