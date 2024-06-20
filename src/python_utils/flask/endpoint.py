@@ -34,7 +34,7 @@ class Endpoint(Blueprint):
 
     @staticmethod
     def get_endpoint_id(url_prefix: str) -> str:
-        return url_prefix.replace('/', '') or "main"
+        return url_prefix.replace('/', '_') or "main"
 
 
 def init_service(init_service_function):
