@@ -26,7 +26,7 @@ class GlobalDataStore:
     def start(self):
         self.manager.start()
 
-    def connnect(self):
+    def connect(self):
         self.manager.connect()
         self.shared_data = self.manager.shared_data()
 
@@ -140,7 +140,7 @@ class GlobalDataShareContext:
         self.global_data_store = global_data_store
 
     def __enter__(self):
-        self.global_data_store.connnect()
+        self.global_data_store.connect()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         # destroy_global_data_share_on_exit()

@@ -1,7 +1,7 @@
 import errno
 import os
 from typing import List
-
+from filelock import FileLock
 from tinydb import TinyDB, Query
 
 
@@ -16,14 +16,13 @@ def create_file_with_path(filename: str):
 
 class BaseSettingsProvider:
 
-    def __init__(self):
-        self.db: TinyDB = None
-
-    def load(self, filename):
+    def __init__(self, filename: str):
         create_file_with_path(filename)
+        self.filename = filename
+        self.lock = FileLock(f"{filename}.lock")
         self.db = TinyDB(filename)
 
-    def set(self, property_name, property_value):
+    def set(self, property_name: str, property_value):
         settings_query = Query()
         settings = self.db.get(settings_query.name == property_name)
         if not settings:
@@ -31,7 +30,8 @@ class BaseSettingsProvider:
         else:
             settings['value'] = property_value
 
-        self.db.upsert(settings, settings_query.name == property_name)
+        with self.lock:
+            self.db.upsert(settings, settings_query.name == property_name)
 
     def get(self, property_name):
         settings_query = Query()
@@ -52,7 +52,8 @@ class BaseSettingsProvider:
 
     def remove(self, property_name):
         settings_query = Query()
-        self.db.remove(settings_query.name == property_name)
+        with self.lock:
+            self.db.remove(settings_query.name == property_name)
 
     def get_all(self) -> List:
         return self.db.all()
