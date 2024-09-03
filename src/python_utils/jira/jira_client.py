@@ -6,7 +6,7 @@ from tinydb import TinyDB, Query
 from tinydb.middlewares import CachingMiddleware
 from tinydb.storages import JSONStorage
 
-from utils.profiler import profiling
+from python_utils.profiler import profiling
 from filelock import FileLock
 
 

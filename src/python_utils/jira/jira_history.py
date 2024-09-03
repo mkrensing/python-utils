@@ -1,5 +1,5 @@
 from typing import List, Dict, Tuple
-from utils.dynamic import DynamicExecution
+from python_utils.dynamic_execution import DynamicExecution
 import re
 
 JIRA_SNAPSHOT_FIELD_CONFIGURATION_PATTERN = re.compile(r"([A-Za-z0-9_.]*)\(([A-Za-z0-9_.\s]*),?\s*(([\"\'A-Za-z0-9_.\s,]*))\)")

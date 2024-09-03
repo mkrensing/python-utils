@@ -1,7 +1,7 @@
 from typing import List, Dict
 import uuid
-from utils.date import get_first_and_last_day_of_current_month, iterate_months
-from services.jira.jira_client import JiraClient
+from python_utils.timestamp import get_first_and_last_day_of_current_month, iterate_months
+from python_utils.jira.jira_client import JiraClient
 
 
 class JiraBatchConfig:
