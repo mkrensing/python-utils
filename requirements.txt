@@ -10,3 +10,4 @@ schedule
 
 jira
 PyYaml
+lxml
