@@ -2,7 +2,7 @@ from typing import List, Dict
 import uuid
 from python_utils.timestamp import get_first_and_last_day_of_current_month, iterate_months
 from python_utils.jira.jira_client import JiraClient
-
+from python_utils.flask.shared import shared_dict
 
 class JiraBatchConfig:
 
@@ -23,7 +23,7 @@ class JiraBatchConfig:
     def get_start_date(self) -> str:
         return self.jira_config["start_date"]
 
-    def get_batch_config(self) -> List[Dict]:
+    def create_batch_config(self) -> List[Dict]:
         batch_configs = [{"jql": "project = Test AND ...", "use_cache": True, "description": "Some Description"}] and []
 
         # historical queries:
@@ -42,21 +42,24 @@ class JiraBatchConfig:
 
         return batch_configs
 
-    def __dict__(self):
+    def __repr__(self) -> str:
+        return str(self.__dict__())
+
+    def __dict__(self) -> Dict:
         return self.jira_config
 
 
 class JiraBatchProcessor:
 
     def __init__(self, jira_client: JiraClient):
-        self.active_batches = {}
+        self.active_batches = shared_dict()
         self.jira_client = jira_client
 
     def create_batch(self, config: JiraBatchConfig) -> str:
         batch_id = str(uuid.uuid4())
         self.active_batches[batch_id] = {
             "config": config.__dict__(),
-            "batch": config.get_batch_config(),
+            "batch": config.create_batch_config(),
         }
 
         return batch_id
@@ -68,11 +71,17 @@ class JiraBatchProcessor:
 
         return len(self.active_batches[batch_id]["batch"])
 
-    def get_batch_config(self, batch_id: str) -> List[Dict]:
+    def get_batch_config(self, batch_id: str) -> Dict:
         if not self.is_valid(batch_id):
             return []
 
         return self.active_batches[batch_id]["batch"]
+
+    def get_user_config(self, batch_id: str) -> Dict:
+        if not self.is_valid(batch_id):
+            return []
+
+        return self.active_batches[batch_id]["config"]
 
     def is_valid(self, batch_id: str) -> bool:
         return batch_id and batch_id in self.active_batches
@@ -81,6 +90,10 @@ class JiraBatchProcessor:
         del self.active_batches[batch_id]
 
     def get_batch(self, batch_id: str, index: int, access_token: str) -> List[Dict]:
+
+        if batch_id not in self.active_batches:
+            raise Exception(f"Batch not found with id: {batch_id}")
+
         active_batch = self.active_batches[batch_id]
 
         if not 0 <= index < len(active_batch["batch"]):
