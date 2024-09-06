@@ -7,7 +7,6 @@ from tinydb import TinyDB, Query
 from tinydb.middlewares import CachingMiddleware
 from tinydb.storages import JSONStorage
 
-from python_utils.profiler import profiling
 from filelock import FileLock
 from python_utils.flask.shared import shared_dict
 
@@ -106,17 +105,17 @@ class JiraClient:
         if use_cache:
             self.query_cache.add_page(jql, jira_page)
 
-        return jira_page
+        return print_size_of(jira_page)
 
     def close(self):
         if self.query_cache:
             self.query_cache.close()
 
 
-def print_size_of(issues: List[Dict]) -> List[Dict]:
-    print(f"Jira returned {len(issues)} issues with a size of {get_size_in_mb(issues)}")
-    return issues
+def print_size_of(some_object) -> List[Dict]:
+    print(f"Jira returned {len(some_object)} issues with a size of {get_size_in_bytes(some_object)}")
+    return some_object
 
 
-def get_size_in_mb(object) -> str:
-    return f"{round(sys.getsizeof(object) / 1000000)} MB"
+def get_size_in_bytes(some_object) -> str:
+    return f"{sys.getsizeof(object)} Bytes"
