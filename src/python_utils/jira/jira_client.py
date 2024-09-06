@@ -10,9 +10,10 @@ from tinydb.storages import JSONStorage
 from filelock import FileLock
 from python_utils.flask.shared import shared_dict
 
+
 class JiraPageResult:
 
-    def __init__(self, start_at:int, total:int, issues: List[Dict]):
+    def __init__(self, start_at: int, total: int, issues: List[Dict]):
         self.start_at = start_at
         self.total = total
         self.issues = issues
@@ -33,7 +34,7 @@ class JiraPageResult:
         return self.get_next_start_at() < self.total
 
     def __dict__(self) -> Dict:
-        return { "nextStartAt": self.get_next_start_at(), "hasNext": self.has_next(), "total": self.total, "issues": self.issues }
+        return {"nextStartAt": self.get_next_start_at(), "hasNext": self.has_next(), "total": self.total, "issues": self.issues}
 
 
 class QueryCache:
@@ -59,7 +60,7 @@ class QueryCache:
         key = self.create_key(jql, page.get_start_at())
         cached_queries = Query()
         with self.lock:
-            self.db.upsert({"key": key, "issues": page.get_issues(), "total": page.get_total() }, cached_queries.key == key)
+            self.db.upsert({"key": key, "issues": page.get_issues(), "total": page.get_total()}, cached_queries.key == key)
             self.db.storage.flush()
 
     @staticmethod
@@ -70,8 +71,6 @@ class QueryCache:
         if self.db:
             with self.lock:
                 self.db.close()
-
-
 
 
 class JiraClient:
@@ -98,23 +97,19 @@ class JiraClient:
             return JiraPageResult(start_at=0, total=0, issues=[])
 
         jira = JIRA(self.hostname, token_auth=access_token)
-        result_set=jira.search_issues(jql, expand=expand, maxResults=page_size, startAt=start_at)
-        issues = [ issue.raw for issue in result_set ]
+        result_set = jira.search_issues(jql, expand=expand, maxResults=page_size, startAt=start_at)
+        issues = [issue.raw for issue in result_set]
 
-        jira_page= JiraPageResult(start_at=result_set.startAt, total=result_set.total, issues=issues)
+        jira_page = JiraPageResult(start_at=result_set.startAt, total=result_set.total, issues=issues)
         if use_cache:
             self.query_cache.add_page(jql, jira_page)
 
-        return print_size_of(jira_page)
+        print(f"Jira returned with a size of {get_size_in_bytes(jira_page)}")
+        return jira_page
 
     def close(self):
         if self.query_cache:
             self.query_cache.close()
-
-
-def print_size_of(some_object) -> List[Dict]:
-    print(f"Jira returned {len(some_object)} issues with a size of {get_size_in_bytes(some_object)}")
-    return some_object
 
 
 def get_size_in_bytes(some_object) -> str:
