@@ -9,7 +9,7 @@ from tinydb.storages import JSONStorage
 
 from python_utils.profiler import profiling
 from filelock import FileLock
-
+from python_utils.flask.shared import shared_dict
 
 class QueryCache:
 
@@ -40,53 +40,30 @@ class QueryCache:
                 self.db.close()
 
 
-class JiraPagination:
+class JiraPageResult:
 
-    def __init__(self, jira: JIRA, jql: str, expand: str, max_page_size: int, issues: List[Dict]=None):
-        self.jira = jira
-        self.jql = jql
-        self.expand = expand
-        self.max_page_size = max_page_size
-        self.has_next_page = True
-        self.next_page_start_at = 0
+    def __init__(self, start_at:int, total:int, issues: List[Dict]):
+        self.start_at = start_at
+        self.total = total
         self.issues = issues
 
-    @staticmethod
-    def restore(jira: JIRA, stored_pagination: Dict):
-        return JiraPagination(jira=jira,
-                              jql=stored_pagination["jql"],
-                              expand=stored_pagination["expand"],
-                              max_page_size=stored_pagination["max_page_size"])
-
-    def __dict__(self) -> Dict:
-        return { "jql": self.jql, "expand": self.expand, "max_page_size": self.max_page_size }
+    def get_next_start_at(self) -> int:
+        return self.start_at + len(self.issues)
 
     def has_next(self) -> bool:
-        return self.has_next_page
+        return self.get_next_start_at() <= self.total
 
-    def get_next(self) -> List[Dict]:
+    def get_start_at(self) -> int:
+        return self.start_at
 
-        if self.issues:
-            self.has_next_page = False
-            return self.issues
+    def get_total(self) -> int:
+        return self.total
 
-        if not self.has_next_page:
-            return []
+    def get_issues(self) -> List[Dict]:
+        return self.issues
 
-        result_set = self.jira.search_issues(self.jql, expand=self.expand, maxResults=self.max_page_size, startAt=self.next_page_start_at)
-        self.has_next_page = result_set.startAt < result_set.total
-        self.next_page_start_at = result_set.startAt + len(result_set)
-
-        return JiraPagination.print_size_of([ issue.raw for issue in result_set ])
-
-    @staticmethod
-    def print_size_of(issues: List[Dict]) -> List[Dict]:
-        print(f"Jira returned {len(issues)} issues with a size of {JiraPagination.get_size_in_mb(issues)}")
-        return issues
-
-    @staticmethod
-    def get_size_in_mb(object) -> str:
-        return f"{round(sys.getsizeof(object) / 1000000)} MB"
+    def __dict__(self) -> Dict:
+        return { "next_start_at": self.get_next_start_at(), "has_next": self.has_next(), "total": self.total, "issues": self.issues }
 
 
 class JiraClient:
@@ -96,70 +73,35 @@ class JiraClient:
         self.query_cache = QueryCache(filename=query_cache_filename)
         self.test_mode = test_mode
         self.max_result_size = max_result_size
+        self.active_paginations = shared_dict()
 
     def set_test_mode(self, test_mode: bool):
         self.test_mode = test_mode
 
-    def search(self, jql: str, access_token: str, page_size=200, use_cache=False, expand="changelog") -> JiraPagination:
-        jira = JIRA(server=self.hostname, token_auth=access_token)
-        issues = None
+    def get_issues(self, jql: str, access_token: str, use_cache: bool, expand="changelog", page_size=200, start_at=0) -> JiraPageResult:
+
         if self.test_mode or use_cache:
             issues = self.query_cache.get_issues(jql)
-
-        return JiraPagination(jira=jira, jql=jql, expand=expand, max_page_size=page_size, issues=issues)
-
-    def restore_pagination(self, access_token: str, pagination_dict: Dict) -> JiraPagination:
-        jira = JIRA(server=self.hostname, token_auth=access_token)
-        return JiraPagination.restore(jira, pagination_dict)
-
-
-    def get_issues(self, jql: str, access_token: str, use_cache: False, page_size=200) -> List[Dict]:
-
-        print(f"get_issues({jql}, use_cache={use_cache}, page_size={page_size})")
-
-        @profiling(include_parameters=True)
-        def __get_issues(__jql: str):
-
-            if self.test_mode or use_cache:
-                issues = self.query_cache.get_issues(__jql)
-                if issues:
-                    return issues
-
-            issues = self.search_all(__jql, expand="changelog", access_token=access_token, page_size=page_size)
-
-            if self.test_mode or use_cache:
-                self.query_cache.add_issues(__jql, issues)
-
-            return issues
-
-        return __get_issues(jql)
-
-    def search_all(self, jql: str, expand: str, access_token: str, page_size=500) -> List[Dict]:
+            return JiraPageResult(start_at=0, total=len(issues), issues=[])
 
         if self.test_mode:
             print(f"TEST_MODE active. Return empty result for jql {jql}")
-            return []
+            return JiraPageResult(start_at=0, total=0, issues=[])
 
-        jira = JIRA(server=self.hostname, token_auth=access_token)
-        issues = []
-
-        result_set = jira.search_issues(jql, expand=expand, maxResults=50)
-        if result_set.total > self.max_result_size:
-            raise Exception(f"Resultset is to large. Size: {result_set.total} over {self.max_result_size}")
-
-        while result_set.startAt < result_set.total:
-            print(f"Jira returned {len(result_set)} issues with a size of {self.get_size_in_mb(result_set)}")
-            issues.extend([ issue.raw for issue in result_set ])
-            next_page_start_at = result_set.startAt + len(result_set)
-            result_set = jira.search_issues(jql, expand=expand, maxResults=page_size, startAt=next_page_start_at)
-
-        return issues
-
-    @staticmethod
-    def get_size_in_mb(object) -> str:
-        return f"{round(sys.getsizeof(object) / 1000000)} MB"
+        jira = JIRA(self.hostname, token_auth=access_token)
+        result_set=jira.search_issues(jql, expand=expand, maxResults=page_size, startAt=start_at)
+        return JiraPageResult(start_at=result_set.startAt, total=result_set.total, issues=[ issue.raw for issue in result_set ])
 
 
     def close(self):
         if self.query_cache:
             self.query_cache.close()
+
+
+def print_size_of(issues: List[Dict]) -> List[Dict]:
+    print(f"Jira returned {len(issues)} issues with a size of {get_size_in_mb(issues)}")
+    return issues
+
+
+def get_size_in_mb(object) -> str:
+    return f"{round(sys.getsizeof(object) / 1000000)} MB"

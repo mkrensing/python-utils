@@ -1,7 +1,7 @@
 from typing import List, Dict
 import uuid
 from python_utils.timestamp import get_first_and_last_day_of_current_month, iterate_months
-from python_utils.jira.jira_client import JiraClient, JiraPagination
+from python_utils.jira.jira_client import JiraClient, JiraPageResult
 from python_utils.flask.shared import shared_dict
 
 class JiraBatchConfig:
@@ -89,7 +89,7 @@ class JiraBatchProcessor:
     def close_batch(self, batch_id: str):
         del self.active_batches[batch_id]
 
-    def get_batch(self, batch_id: str, index: int, access_token: str) -> List[Dict]:
+    def get_batch(self, batch_id: str, index: int, start_at: int, access_token: str) -> JiraPageResult:
 
         if batch_id not in self.active_batches:
             raise Exception(f"Batch not found with id: {batch_id}")
@@ -100,16 +100,10 @@ class JiraBatchProcessor:
             raise Exception(f"Invalid batch index: {index}")
 
         batch = active_batch["batch"][index]
-        active_pagination: JiraPagination = None
-        if "pagination" not in active_batch:
-            active_pagination = self.jira_client.search(jql=batch["jql"], access_token=access_token, page_size=200, use_cache=batch["use_cache"])
-        else:
-            active_pagination = self.jira_client.restore_pagination(access_token=access_token, pagination_dict=active_batch["pagination"])
 
-        if not active_pagination.has_next():
-            return []
-
-        issues = active_pagination.get_next()
-        active_batch["pagination"] = active_pagination.__dict__()
-        return issues
+        return self.jira_client.get_issues(jql=batch["jql"],
+                                                        access_token=access_token,
+                                                        use_cache=batch["use_cache"],
+                                                        page_size=200,
+                                                        start_at=start_at)
 
