@@ -106,7 +106,7 @@ class JiraBatchProcessor:
         else:
             active_pagination = self.jira_client.restore_pagination(access_token=access_token, pagination_dict=active_batch["pagination"])
 
-        if not active_pagination.has_next_page():
+        if not active_pagination.has_next():
             return []
 
         issues = active_pagination.get_next()
