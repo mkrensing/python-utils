@@ -102,8 +102,8 @@ class JiraBatchProcessor:
         batch = active_batch["batch"][index]
 
         return self.jira_client.get_issues(jql=batch["jql"],
-                                                        access_token=access_token,
-                                                        use_cache=batch["use_cache"],
-                                                        page_size=200,
-                                                        start_at=start_at)
+                                            access_token=access_token,
+                                            use_cache=batch["use_cache"],
+                                            page_size=250,
+                                            start_at=start_at)
 
