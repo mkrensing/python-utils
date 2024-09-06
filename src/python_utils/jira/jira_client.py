@@ -40,7 +40,7 @@ class QueryCache:
                 self.db.close()
 
 
-class Pagination:
+class JiraPagination:
 
     def __init__(self, jira: JIRA, jql: str, expand: str, max_page_size: int, issues: List[Dict]=None):
         self.jira = jira
@@ -50,6 +50,16 @@ class Pagination:
         self.has_next_page = True
         self.next_page_start_at = 0
         self.issues = issues
+
+    @staticmethod
+    def restore(jira: JIRA, stored_pagination: Dict):
+        return JiraPagination(jira=jira,
+                              jql=stored_pagination["jql"],
+                              expand=stored_pagination["expand"],
+                              max_page_size=stored_pagination["max_page_size"])
+
+    def __dict__(self) -> Dict:
+        return { "jql": self.jql, "expand": self.expand, "max_page_size": self.max_page_size }
 
     def has_next(self) -> bool:
         return self.has_next_page
@@ -67,11 +77,11 @@ class Pagination:
         self.has_next_page = result_set.startAt < result_set.total
         self.next_page_start_at = result_set.startAt + len(result_set)
 
-        return Pagination.print_size_of([ issue.raw for issue in result_set ])
+        return JiraPagination.print_size_of([ issue.raw for issue in result_set ])
 
     @staticmethod
     def print_size_of(issues: List[Dict]) -> List[Dict]:
-        print(f"Jira returned {len(issues)} issues with a size of {Pagination.get_size_in_mb(issues)}")
+        print(f"Jira returned {len(issues)} issues with a size of {JiraPagination.get_size_in_mb(issues)}")
         return issues
 
     @staticmethod
@@ -90,13 +100,17 @@ class JiraClient:
     def set_test_mode(self, test_mode: bool):
         self.test_mode = test_mode
 
-    def search(self, jql: str, access_token: str, page_size=200, use_cache=False, expand="changelog") -> Pagination:
+    def search(self, jql: str, access_token: str, page_size=200, use_cache=False, expand="changelog") -> JiraPagination:
         jira = JIRA(server=self.hostname, token_auth=access_token)
         issues = None
         if self.test_mode or use_cache:
             issues = self.query_cache.get_issues(jql)
 
-        return Pagination(jira=jira, jql=jql, expand=expand, max_page_size=page_size, issues=issues)
+        return JiraPagination(jira=jira, jql=jql, expand=expand, max_page_size=page_size, issues=issues)
+
+    def restore_pagination(self, access_token: str, pagination_dict: Dict) -> JiraPagination:
+        jira = JIRA(server=self.hostname, token_auth=access_token)
+        return JiraPagination.restore(jira, pagination_dict)
 
 
     def get_issues(self, jql: str, access_token: str, use_cache: False, page_size=200) -> List[Dict]:
