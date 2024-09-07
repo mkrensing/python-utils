@@ -50,13 +50,17 @@ class QueryCache:
 
     def get_all_pages(self, jql: str, start_at: int) -> JiraPageResult:
         issues = []
-        page = self.get_page(jql, start_at)
-        issues.extend(page.get_issues())
+        first_page = self.get_page(jql, start_at)
+        if not first_page:
+            return None
+        issues.extend(first_page.get_issues())
+        page = first_page
         while page.has_next():
             page = self.get_page(jql, page.get_next_start_at())
-            issues.extend(page.get_issues())
+            if page:
+                issues.extend(page.get_issues())
 
-        return JiraPageResult(start_at=start_at, total=page.get_total(), issues=issues)
+        return JiraPageResult(start_at=start_at, total=first_page.get_total(), issues=issues)
 
 
     def get_page(self, jql: str, start_at: int) -> JiraPageResult:
