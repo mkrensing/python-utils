@@ -48,6 +48,17 @@ class QueryCache:
         self.lock = FileLock(f"{self.filename}.lock")
         self.db = TinyDB(self.filename, storage=CachingMiddleware(JSONStorage))
 
+    def get_all_pages(self, jql: str, start_at: int) -> JiraPageResult:
+        issues = []
+        page = self.get_page(jql, start_at)
+        issues.extend(page.get_issues())
+        while page.has_next():
+            page = self.get_page(jql, page.get_next_start_at())
+            issues.extend(page.get_issues())
+
+        return JiraPageResult(start_at=start_at, total=page.get_total(), issues=issues)
+
+
     def get_page(self, jql: str, start_at: int) -> JiraPageResult:
         cached_queries = Query()
         result = self.db.search(cached_queries.key == self.create_key(jql, start_at))
@@ -96,7 +107,7 @@ class JiraClient:
         def __get_issues(jql: str, use_cache: bool, expand: str, page_size:int, start_at: int):
 
             if self.test_mode or use_cache:
-                jira_page = self.query_cache.get_page(jql, start_at)
+                jira_page = self.query_cache.get_all_pages(jql, start_at)
                 if jira_page:
                     return jira_page
 
