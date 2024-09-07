@@ -18,7 +18,7 @@ class ConfluenceClient:
         if not self.hostname:
             return { **self.get_testdata("General"), **self.get_testdata(board_id) }
 
-        xml_content = get_page_xml_content(page_id)
+        xml_content = self.get_page_xml_content(page_id)
 
         general_config = self.get_config_by_xml_content("General", xml_content) or {}
         board_config = self.get_config_by_xml_content(board_id, xml_content) or {}
