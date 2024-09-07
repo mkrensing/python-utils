@@ -91,7 +91,7 @@ class JiraBatchProcessor:
     def close_batch(self, batch_id: str):
         del self.active_batches[batch_id]
 
-    def get_batch(self, batch_id: str, index: int, start_at: int, access_token: str, initial_page_size=50, page_size=250) -> JiraPageResult:
+    def get_batch(self, batch_id: str, index: int, start_at: int, access_token: str, initial_page_size=50, page_size=250, search_all_in_once=False) -> JiraPageResult:
 
         if batch_id not in self.active_batches:
             raise Exception(f"Batch not found with id: {batch_id}")
@@ -107,7 +107,8 @@ class JiraBatchProcessor:
                                             access_token=access_token,
                                             use_cache=batch["use_cache"],
                                             page_size=self.get_page_size(start_at, initial_page_size, page_size),
-                                            start_at=start_at)
+                                            start_at=start_at,
+                                            search_all_in_once=search_all_in_once)
 
     def get_page_size(self, start_at: int, initial_page_size: int, page_size: int):
         return initial_page_size if start_at == 0 else page_size

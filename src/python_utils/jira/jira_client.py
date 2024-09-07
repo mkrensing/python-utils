@@ -104,8 +104,8 @@ class JiraClient:
         self.test_mode = test_mode
 
 
-    def get_issues(self, jql: str, access_token: str, use_cache: bool, expand="changelog", page_size=200, start_at=0) -> JiraPageResult:
-        logger.debug(f"get_issues(jql={jql}, use_cache={use_cache}, expand={expand}, page_size={page_size}, start_at={start_at}")
+    def get_issues(self, jql: str, access_token: str, use_cache: bool, expand="changelog", page_size=200, start_at=0, search_all_in_once=False) -> JiraPageResult:
+        logger.debug(f"get_issues(jql={jql}, use_cache={use_cache}, expand={expand}, page_size={page_size}, start_at={start_at}, search_all_in_once={search_all_in_once}")
 
 
         @profiling()
@@ -113,7 +113,7 @@ class JiraClient:
             self.query_cache.add_page(jql, jira_page)
 
         @profiling()
-        def __get_issues(jql: str, use_cache: bool, expand: str, page_size:int, start_at: int):
+        def __get_issues(jql: str, use_cache: bool, expand: str, page_size:int, start_at: int, search_all_in_once: bool):
 
             if self.test_mode or use_cache:
                 jira_page = self.query_cache.get_all_pages(jql, start_at)
@@ -124,17 +124,29 @@ class JiraClient:
                 logger.info(f"TEST_MODE active. Return empty result for jql {jql}")
                 return JiraPageResult(start_at=0, total=0, issues=[])
 
-            jira = JIRA(self.hostname, token_auth=access_token)
-            result_set = jira.search_issues(jql, expand=expand, maxResults=page_size, startAt=start_at)
-            issues = [issue.raw for issue in result_set]
+            jira_page = self.search(jql, access_token, expand, page_size, start_at)
 
-            jira_page = JiraPageResult(start_at=result_set.startAt, total=result_set.total, issues=issues)
+            if search_all_in_once:
+                next_page = jira_page
+                issues = []
+                issues.extend(jira_page.get_issues())
+                while next_page.has_next():
+                    next_page = self.search(jql, access_token, expand, page_size, jira_page.get_next_start_at())
+                    issues.extend(next_page.get_issues())
+                jira_page = JiraPageResult(start_at, jira_page.get_total(), issues)
+
             if use_cache:
                 __add_page_to_cache(jql, jira_page)
 
             return jira_page
 
-        return __get_issues(jql, use_cache, expand, page_size, start_at)
+        return __get_issues(jql, use_cache, expand, page_size, start_at, search_all_in_once)
+
+    def search(self, jql: str, access_token: str, expand: str, page_size:int, start_at: int) -> JiraPageResult:
+        jira = JIRA(self.hostname, token_auth=access_token)
+        result_set = jira.search_issues(jql, expand=expand, maxResults=page_size, startAt=start_at)
+        issues = [issue.raw for issue in result_set]
+        return JiraPageResult(start_at=result_set.startAt, total=result_set.total, issues=issues)
 
     def close(self):
         if self.query_cache:
