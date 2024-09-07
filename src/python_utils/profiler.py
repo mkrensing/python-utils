@@ -126,6 +126,7 @@ class ProfilingContext:
 
 
 def profiling(name: str = None, log_level: int = logging.INFO, threshold: float = 0.1, include_parameters=True):
+
     def get_parameter_values(arguments_spec, args, kwargs) -> []:
         parameter_values = []
         arg_length = len(args)
