@@ -1,5 +1,7 @@
 from typing import List, Dict
 import uuid
+
+from python_utils.profiler import profiling
 from python_utils.timestamp import get_first_and_last_day_of_current_month, iterate_months
 from python_utils.jira.jira_client import JiraClient, JiraPageResult
 from python_utils.flask.shared import shared_dict
@@ -89,7 +91,8 @@ class JiraBatchProcessor:
     def close_batch(self, batch_id: str):
         del self.active_batches[batch_id]
 
-    def get_batch(self, batch_id: str, index: int, start_at: int, access_token: str) -> JiraPageResult:
+    @profiling
+    def get_batch(self, batch_id: str, index: int, start_at: int, access_token: str, initial_page_size=50, page_size=250) -> JiraPageResult:
 
         if batch_id not in self.active_batches:
             raise Exception(f"Batch not found with id: {batch_id}")
@@ -104,6 +107,8 @@ class JiraBatchProcessor:
         return self.jira_client.get_issues(jql=batch["jql"],
                                             access_token=access_token,
                                             use_cache=batch["use_cache"],
-                                            page_size=250,
+                                            page_size=self.get_page_size(start_at, initial_page_size, page_size),
                                             start_at=start_at)
 
+    def get_page_size(self, start_at: int, initial_page_size: int, page_size: int):
+        return initial_page_size if start_at == 0 else page_size

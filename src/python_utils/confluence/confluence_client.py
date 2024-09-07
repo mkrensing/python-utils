@@ -16,7 +16,16 @@ class ConfluenceClient:
     def get_config(self, page_id: str, board_id: str) -> Dict:
 
         if not self.hostname:
-            return self.get_testdata(board_id)
+            return { **self.get_testdata("General"), **self.get_testdata(board_id) }
+
+        xml_content = get_page_xml_content(page_id)
+
+        general_config = self.get_config_by_xml_content("General", xml_content) or {}
+        board_config = self.get_config_by_xml_content(board_id, xml_content) or {}
+
+        return {**general_config, **board_config}
+
+    def get_page_xml_content(self, page_id: str) -> str:
 
         url = f"{self.hostname}/confluence/rest/api/content/{page_id}?expand=body.storage"
 
@@ -33,10 +42,7 @@ class ConfluenceClient:
         page = response.json()
         xml_content = page["body"]["storage"]["value"]
 
-        general_config = self.get_config_by_xml_content("General", xml_content) or {}
-        board_config = self.get_config_by_xml_content(board_id, xml_content) or {}
-
-        return {**general_config, **board_config}
+        return xml_content
 
     @staticmethod
     def get_config_by_xml_content(board_id: str, xml_content: str) -> Dict:

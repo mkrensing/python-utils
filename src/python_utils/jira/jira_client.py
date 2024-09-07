@@ -86,7 +86,7 @@ class JiraClient:
         self.test_mode = test_mode
 
     def get_issues(self, jql: str, access_token: str, use_cache: bool, expand="changelog", page_size=200, start_at=0) -> JiraPageResult:
-
+        print(f"get_issues(jql={jql}, use_cache={use_cache}, expand={expand}, page_size={page_size}, start_at={start_at}")
         if self.test_mode or use_cache:
             jira_page = self.query_cache.get_page(jql, start_at)
             if jira_page:
