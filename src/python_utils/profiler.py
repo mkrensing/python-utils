@@ -131,8 +131,8 @@ def profiling(name: str = None, log_level: int = logging.INFO, threshold: float 
         parameter_values = []
         arg_length = len(args)
         arg_index = 0
+        arg_kwargs_index = 0
         arg_default_index = 0
-        # print(f"get_parameter_values args_spec={arguments_spec.args} defaults_spec={arguments_spec.defaults} args={args} kwargs={kwargs}")
 
         for parameter_name in arguments_spec.args:
             if arg_length > arg_index:
@@ -140,7 +140,7 @@ def profiling(name: str = None, log_level: int = logging.INFO, threshold: float 
                 arg_index += 1
             elif parameter_name in kwargs:
                 parameter_values.append(kwargs[parameter_name])
-                arg_default_index += 1
+                arg_kwargs_index += 1
             else:
                 parameter_values.append(arguments_spec.defaults[arg_default_index])
                 arg_default_index += 1
