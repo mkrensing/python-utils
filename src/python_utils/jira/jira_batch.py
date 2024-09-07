@@ -91,6 +91,7 @@ class JiraBatchProcessor:
     def close_batch(self, batch_id: str):
         del self.active_batches[batch_id]
 
+    @profiling()
     def get_batch(self, batch_id: str, index: int, start_at: int, access_token: str, initial_page_size=50, page_size=250, search_all_in_once=False) -> JiraPageResult:
 
         if batch_id not in self.active_batches:
