@@ -52,8 +52,6 @@ def extract_jwt(parameter_name="access_token"):
 
         @wraps(fn)
         def decorator(*args, **kwargs):
-            print(request.args)
-
             return fn(*args, **kwargs)
 
         return decorator

@@ -1,4 +1,5 @@
 import sys
+import logging
 from pathlib import Path
 from typing import List, Dict, Callable
 
@@ -9,7 +10,9 @@ from tinydb.storages import JSONStorage
 
 from filelock import FileLock
 from python_utils.flask.shared import shared_dict
+from python_utils.profiler import profiling
 
+logger = logging.getLogger(__name__)
 
 class JiraPageResult:
 
@@ -85,15 +88,17 @@ class JiraClient:
     def set_test_mode(self, test_mode: bool):
         self.test_mode = test_mode
 
+    @profiling(include_parameters=False)
     def get_issues(self, jql: str, access_token: str, use_cache: bool, expand="changelog", page_size=200, start_at=0) -> JiraPageResult:
-        print(f"get_issues(jql={jql}, use_cache={use_cache}, expand={expand}, page_size={page_size}, start_at={start_at}")
+        logger.debug(f"get_issues(jql={jql}, use_cache={use_cache}, expand={expand}, page_size={page_size}, start_at={start_at}")
+
         if self.test_mode or use_cache:
             jira_page = self.query_cache.get_page(jql, start_at)
             if jira_page:
                 return jira_page
 
         if self.test_mode:
-            print(f"TEST_MODE active. Return empty result for jql {jql}")
+            logger.info(f"TEST_MODE active. Return empty result for jql {jql}")
             return JiraPageResult(start_at=0, total=0, issues=[])
 
         jira = JIRA(self.hostname, token_auth=access_token)
@@ -104,7 +109,6 @@ class JiraClient:
         if use_cache:
             self.query_cache.add_page(jql, jira_page)
 
-        print(f"Jira returned with a size of {get_size_in_bytes(jira_page)}")
         return jira_page
 
     def close(self):
@@ -112,5 +116,3 @@ class JiraClient:
             self.query_cache.close()
 
 
-def get_size_in_bytes(some_object) -> str:
-    return f"{sys.getsizeof(object)} Bytes"
