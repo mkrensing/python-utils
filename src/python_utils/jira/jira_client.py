@@ -88,28 +88,33 @@ class JiraClient:
     def set_test_mode(self, test_mode: bool):
         self.test_mode = test_mode
 
-    @profiling()
+
     def get_issues(self, jql: str, access_token: str, use_cache: bool, expand="changelog", page_size=200, start_at=0) -> JiraPageResult:
         logger.debug(f"get_issues(jql={jql}, use_cache={use_cache}, expand={expand}, page_size={page_size}, start_at={start_at}")
 
-        if self.test_mode or use_cache:
-            jira_page = self.query_cache.get_page(jql, start_at)
-            if jira_page:
-                return jira_page
+        @profiling()
+        def __get_issues(jql: str, use_cache: bool, expand: str, page_size:int, start_at: int):
 
-        if self.test_mode:
-            logger.info(f"TEST_MODE active. Return empty result for jql {jql}")
-            return JiraPageResult(start_at=0, total=0, issues=[])
+            if self.test_mode or use_cache:
+                jira_page = self.query_cache.get_page(jql, start_at)
+                if jira_page:
+                    return jira_page
 
-        jira = JIRA(self.hostname, token_auth=access_token)
-        result_set = jira.search_issues(jql, expand=expand, maxResults=page_size, startAt=start_at)
-        issues = [issue.raw for issue in result_set]
+            if self.test_mode:
+                logger.info(f"TEST_MODE active. Return empty result for jql {jql}")
+                return JiraPageResult(start_at=0, total=0, issues=[])
 
-        jira_page = JiraPageResult(start_at=result_set.startAt, total=result_set.total, issues=issues)
-        if use_cache:
-            self.query_cache.add_page(jql, jira_page)
+            jira = JIRA(self.hostname, token_auth=access_token)
+            result_set = jira.search_issues(jql, expand=expand, maxResults=page_size, startAt=start_at)
+            issues = [issue.raw for issue in result_set]
 
-        return jira_page
+            jira_page = JiraPageResult(start_at=result_set.startAt, total=result_set.total, issues=issues)
+            if use_cache:
+                self.query_cache.add_page(jql, jira_page)
+
+            return jira_page
+
+        return __get_issues(jql, use_cache, expand, page_size, start_at)
 
     def close(self):
         if self.query_cache:
