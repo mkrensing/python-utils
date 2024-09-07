@@ -103,6 +103,11 @@ class JiraClient:
     def get_issues(self, jql: str, access_token: str, use_cache: bool, expand="changelog", page_size=200, start_at=0) -> JiraPageResult:
         logger.debug(f"get_issues(jql={jql}, use_cache={use_cache}, expand={expand}, page_size={page_size}, start_at={start_at}")
 
+
+        @profiling()
+        def __add_page_to_cache(jql: str, jira_page: JiraPageResult):
+            self.query_cache.add_page(jql, jira_page)
+
         @profiling()
         def __get_issues(jql: str, use_cache: bool, expand: str, page_size:int, start_at: int):
 
@@ -121,7 +126,7 @@ class JiraClient:
 
             jira_page = JiraPageResult(start_at=result_set.startAt, total=result_set.total, issues=issues)
             if use_cache:
-                self.query_cache.add_page(jql, jira_page)
+                __add_page_to_cache(jql, jira_page)
 
             return jira_page
 
