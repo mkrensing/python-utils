@@ -132,7 +132,7 @@ class JiraClient:
                 issues = []
                 issues.extend(jira_page.get_issues())
                 while next_page.has_next():
-                    next_page = self.search(jql, access_token, expand, page_size, jira_page.get_next_start_at())
+                    next_page = self.search(jql, access_token, expand, page_size, next_page.get_next_start_at())
                     issues.extend(next_page.get_issues())
                 jira_page = JiraPageResult(start_at, len(issues), issues)
                 logger.info(f"search_all_in_once activ! Return for {jql}: List with {jira_page.get_total()} issues")
