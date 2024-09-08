@@ -56,7 +56,7 @@ class QueryCache:
         issues=[]
         for page in result:
             issues.extend(page["issues"])
-        
+
         return JiraPageResult(start_at=0, total=len(issues), issues=issues)
 
 
@@ -114,7 +114,7 @@ class JiraClient:
             if self.test_mode or use_cache:
                 jira_page = __get_pages_from_cache(jql)
                 if jira_page:
-                    logger.info(f"Return cached issues for {jql}: List with {jira_page.get_total()} issues")
+                    logger.debug(f"Return cached issues for {jql}: List with {jira_page.get_total()} issues")
                     return jira_page
 
             if self.test_mode:
@@ -131,10 +131,9 @@ class JiraClient:
                     next_page = self.search(jql, access_token, expand, page_size, next_page.get_next_start_at())
                     issues.extend(next_page.get_issues())
                 jira_page = JiraPageResult(start_at, len(issues), issues)
-                logger.info(f"search_all_in_once activ! Return for {jql}: List with {jira_page.get_total()} issues")
 
             if use_cache:
-                logger.info(f"Add {jql} to cache: {len(jira_page.get_issues())} items")
+                logger.debug(f"Add {jql} to cache: {len(jira_page.get_issues())} items")
                 __add_page_to_cache(jql, jira_page)
 
             return jira_page

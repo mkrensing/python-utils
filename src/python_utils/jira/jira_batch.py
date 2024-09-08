@@ -6,6 +6,7 @@ from python_utils.timestamp import get_first_and_last_day_of_current_month, iter
 from python_utils.jira.jira_client import JiraClient, JiraPageResult
 from python_utils.flask.shared import shared_dict
 
+
 class JiraBatchConfig:
 
     def __init__(self, jira_config: Dict):
@@ -75,13 +76,13 @@ class JiraBatchProcessor:
 
     def get_batch_config(self, batch_id: str) -> Dict:
         if not self.is_valid(batch_id):
-            return []
+            return {}
 
         return self.active_batches[batch_id]["batch"]
 
     def get_user_config(self, batch_id: str) -> Dict:
         if not self.is_valid(batch_id):
-            return []
+            return {}
 
         return self.active_batches[batch_id]["config"]
 
@@ -92,7 +93,8 @@ class JiraBatchProcessor:
         del self.active_batches[batch_id]
 
     @profiling()
-    def get_batch(self, batch_id: str, index: int, start_at: int, access_token: str, initial_page_size=50, page_size=250, search_all_in_once=False) -> JiraPageResult:
+    def get_batch(self, batch_id: str, index: int, start_at: int, access_token: str, initial_page_size=50, page_size=250,
+                  search_all_in_once=False) -> JiraPageResult:
 
         if batch_id not in self.active_batches:
             raise Exception(f"Batch not found with id: {batch_id}")
@@ -105,11 +107,12 @@ class JiraBatchProcessor:
         batch = active_batch["batch"][index]
 
         return self.jira_client.get_issues(jql=batch["jql"],
-                                            access_token=access_token,
-                                            use_cache=batch["use_cache"],
-                                            page_size=self.get_page_size(start_at, initial_page_size, page_size),
-                                            start_at=start_at,
-                                            search_all_in_once=search_all_in_once)
+                                           access_token=access_token,
+                                           use_cache=batch["use_cache"],
+                                           page_size=self.get_page_size(start_at, initial_page_size, page_size),
+                                           start_at=start_at,
+                                           search_all_in_once=search_all_in_once)
 
-    def get_page_size(self, start_at: int, initial_page_size: int, page_size: int):
+    @staticmethod
+    def get_page_size(start_at: int, initial_page_size: int, page_size: int):
         return initial_page_size if start_at == 0 else page_size
