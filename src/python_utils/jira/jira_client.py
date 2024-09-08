@@ -56,13 +56,13 @@ class QueryCache:
         issues=[]
         for page in result:
             issues.extend(page["issues"])
-
+        
         return JiraPageResult(start_at=0, total=len(issues), issues=issues)
 
 
     def get_page(self, jql: str, start_at: int) -> JiraPageResult:
         cached_queries = Query()
-        result = self.db.search(cached_queries.key == self.create_key(jql, start_at))
+        result = self.db.search(cached_queries.jql == jql and cached_queries.startAt == start_at)
         if not result:
             return None
         if len(result) != 1:
@@ -72,15 +72,11 @@ class QueryCache:
         return JiraPageResult(start_at=start_at, total=page["total"], issues=page["issues"])
 
     def add_page(self, jql, page: JiraPageResult):
-        key = self.create_key(jql, page.get_start_at())
         cached_queries = Query()
         with self.lock:
-            self.db.upsert({"key": key, "issues": page.get_issues(), "total": page.get_total()}, cached_queries.key == key)
+            self.db.upsert({"jql": jql, "startAt": page.get_start_at(),  "total": page.get_total(), "issues": page.get_issues()}, cached_queries.jql == jql)
             self.db.storage.flush()
 
-    @staticmethod
-    def create_key(jql: str, start_at: int) -> str:
-        return f"{jql}_{start_at}"
 
     def close(self):
         if self.db:
