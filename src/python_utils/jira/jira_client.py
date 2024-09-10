@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Dict, Callable
 
 from jira import JIRA
-from tinydb import TinyDB, Query
+from tinydb import TinyDB, Query, where
 from tinydb.middlewares import CachingMiddleware
 from tinydb.storages import JSONStorage
 
@@ -37,7 +37,7 @@ class JiraPageResult:
         return self.get_next_start_at() < self.total
 
     def __dict__(self) -> Dict:
-        return {"nextStartAt": self.get_next_start_at(), "hasNext": self.has_next(), "total": self.total, "issues": self.issues}
+        return {"nextStartAt": self.get_next_start_at(), "hasNext": self.has_next(), "total": self.total, "issues(count)": len(self.issues) }
 
 
 class QueryCache:
@@ -48,21 +48,30 @@ class QueryCache:
         self.lock = FileLock(f"{self.filename}.lock")
         self.db = TinyDB(self.filename, storage=CachingMiddleware(JSONStorage))
 
-    def get_all_pages(self, jql: str) -> JiraPageResult:
+    def get_all_pages(self, jql: str, start_at: int = 0) -> JiraPageResult:
         cached_queries = Query()
-        result = self.db.search(cached_queries.jql == jql)
+        result = self.db.search((cached_queries.jql == jql) & (cached_queries.startAt >= start_at))
         if not result:
             return None
         issues=[]
+        total=0
         for page in result:
             issues.extend(page["issues"])
+            total=max(total, page["total"])
 
-        return JiraPageResult(start_at=0, total=len(issues), issues=issues)
+        return JiraPageResult(start_at=start_at, total=total, issues=issues)
+
+    def remove_all_pages(self, jql: str):
+        cached_queries = Query()
+        with self.lock:
+            for document_id in self.db.remove(where("jql") == jql):
+                print(f"Removed: {document_id}")
+            self.db.storage.flush()
 
 
     def get_page(self, jql: str, start_at: int) -> JiraPageResult:
         cached_queries = Query()
-        result = self.db.search(cached_queries.jql == jql and cached_queries.startAt == start_at)
+        result = self.db.search((cached_queries.jql == jql) & (cached_queries.startAt == start_at))
         if not result:
             return None
         if len(result) != 1:
@@ -74,8 +83,12 @@ class QueryCache:
     def add_page(self, jql, page: JiraPageResult):
         cached_queries = Query()
         with self.lock:
-            self.db.upsert({"jql": jql, "startAt": page.get_start_at(),  "total": page.get_total(), "issues": page.get_issues()}, cached_queries.jql == jql)
+            self.db.upsert({"jql": jql, "startAt": page.get_start_at(),  "total": page.get_total(), "issues": page.get_issues()}, (cached_queries.jql == jql) & (cached_queries.startAt == page.get_start_at()))
             self.db.storage.flush()
+
+    def clear(self):
+        with self.lock:
+            self.db.truncate()
 
 
     def close(self):
@@ -101,20 +114,16 @@ class JiraClient:
         logger.debug(f"get_issues(jql={jql}, use_cache={use_cache}, expand={expand}, page_size={page_size}, start_at={start_at}, search_all_in_once={search_all_in_once}")
 
         @profiling()
-        def __get_pages_from_cache(jql: str) -> JiraPageResult:
-            return self.query_cache.get_all_pages(jql)
-
-        @profiling()
         def __add_page_to_cache(jql: str, jira_page: JiraPageResult):
             self.query_cache.add_page(jql, jira_page)
 
         @profiling()
-        def __get_issues(jql: str, use_cache: bool, expand: str, page_size:int, start_at: int, search_all_in_once: bool):
+        def __get_issues(jql: str, use_cache: bool, expand: str, page_size:int, start_at: int, search_all_in_once: bool) -> JiraPageResult:
 
             if self.test_mode or use_cache:
-                jira_page = __get_pages_from_cache(jql)
+                jira_page = self.query_cache.get_all_pages(jql, start_at)
                 if jira_page:
-                    logger.debug(f"Return cached issues for {jql}: List with {jira_page.get_total()} issues")
+                    logger.info(f"Return cached issues for {jql}: Total={jira_page.get_total()} / issues: {len(jira_page.get_issues())}")
                     return jira_page
 
             if self.test_mode:
@@ -131,9 +140,10 @@ class JiraClient:
                     next_page = self.search(jql, access_token, expand, page_size, next_page.get_next_start_at())
                     issues.extend(next_page.get_issues())
                 jira_page = JiraPageResult(start_at, len(issues), issues)
+                logger.info(f"search_all_in_once activ! Return for {jql}: List with {jira_page.get_total()} issues")
 
             if use_cache:
-                logger.debug(f"Add {jql} to cache: {len(jira_page.get_issues())} items")
+                logger.info(f"Add {jql} to cache: {len(jira_page.get_issues())} items")
                 __add_page_to_cache(jql, jira_page)
 
             return jira_page
