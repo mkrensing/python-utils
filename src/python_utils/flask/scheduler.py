@@ -1,9 +1,11 @@
 import time
+import logging
 from threading import Thread
 from functools import wraps
 import schedule
 from python_utils.flask.shared import shared_dict
 
+logger = logging.getLogger(__name__)
 scheduler_running = shared_dict()
 
 
@@ -33,7 +35,7 @@ def scheduled_task(interval_minutes, execute_at_start=False):
     schedule_thread.start()
 
     def wrapper(func):
-        print(f"Register for scheduler with interval [{interval_minutes}]: {str(func)}")
+        logger.debug(f"Register for scheduler with interval [{interval_minutes}]: {str(func)}")
         schedule.every(interval_minutes).minutes.do(func)
         if execute_at_start:
             func()

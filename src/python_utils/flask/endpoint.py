@@ -1,5 +1,5 @@
 import atexit
-
+import logging
 from flask import Flask, Response, Blueprint, send_from_directory, request
 from typing import Dict, Tuple
 from python_utils.file import lookup_directory
@@ -11,13 +11,14 @@ registered_endpoints = []
 init_endpoint_functions = []
 destroy_endpoint_functions = []
 
+logger = logging.getLogger(__name__)
 
 class Endpoint(Blueprint):
 
     def __init__(self, url_prefix: str, static_folder: str = ""):
 
         endpoint_name = self.get_endpoint_name(url_prefix)
-        print(f"Loading Endpoint {endpoint_name}")
+        logger.debug(f"Loading Endpoint {endpoint_name}")
 
         if static_folder:
             static_folder = lookup_directory(static_folder)
