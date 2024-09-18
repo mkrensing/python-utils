@@ -175,9 +175,8 @@ class JiraClient:
 
             jira_page = self.search(jql, access_token, expand, page_size, start_at)
 
-            if use_cache:
-                logger.info(f"Add {jql} to cache: {len(jira_page.get_issues())} items")
-                __add_page_to_cache(jql, jira_page)
+            logger.info(f"Add {jql} to cache: {len(jira_page.get_issues())} items")
+            __add_page_to_cache(jql, jira_page)
 
             return jira_page
 
