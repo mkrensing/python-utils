@@ -107,18 +107,23 @@ class SprintCache:
         self.lock = FileLock(f"{self.filename}.lock")
         self.db = TinyDB(self.filename, storage=CachingMiddleware(JSONStorage))
 
-    def get_sprints(self, project_id: str) -> List[Dict[str, str]]:
+    @staticmethod
+    def create_record_id(project_id: str, name_filter: str, activated_date: str) -> str:
+        return f"{project_id}_{name_filter}_{activated_date}"
+
+    def get_sprints(self, project_id: str, name_filter: str, activated_date: str) -> List[Dict[str, str]]:
         cached_queries = Query()
-        result = self.db.search((cached_queries.project_id == project_id) & (cached_queries.timestamp == self.current_timestamp()))
+        result = self.db.search((cached_queries.id == self.create_record_id(project_id, name_filter, activated_date)) & (cached_queries.timestamp == self.current_timestamp()))
         if not result:
             return None
 
         return result[0]["sprints"]
 
-    def add_sprints(self, project_id: str, sprints: List[Dict[str, str]]):
+    def add_sprints(self, project_id: str, name_filter: str, activated_date: str, sprints: List[Dict[str, str]]):
         cached_queries = Query()
         with self.lock:
-            self.db.upsert({"project_id": project_id, "timestamp": self.current_timestamp(), "sprints": sprints }, (cached_queries.project_id == project_id))
+            record_id = self.create_record_id(project_id, name_filter, activated_date)
+            self.db.upsert({"id": record_id, "timestamp": self.current_timestamp(), "sprints": sprints }, (cached_queries.id == record_id))
             self.db.storage.flush()
 
     @staticmethod
@@ -191,7 +196,7 @@ class JiraClient:
 
     def get_sprints_for_project(self, project_id: str, name_filter: str, activated_date: str, access_token: str) -> List[Dict[str, str]]:
 
-        sprints = self.sprint_cache.get_sprints(project_id)
+        sprints = self.sprint_cache.get_sprints(project_id, name_filter, activated_date)
         if sprints:
             return sprints
 
@@ -206,7 +211,7 @@ class JiraClient:
                         sprint_ids.append(sprint["id"])
                         sprints.append(sprint)
 
-            self.sprint_cache.add_sprints(project_id, sprints)
+            self.sprint_cache.add_sprints(project_id, name_filter, activated_date, sprints)
 
         return sprints
 
