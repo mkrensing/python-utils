@@ -213,7 +213,6 @@ class JiraClient:
             sprints = []
             jira = JIRA(self.hostname, token_auth=access_token)
             boards = self.get_boards_for_project(jira, project_id, name_filter)
-            print(f"boards: {boards}")
             for board in boards:
                 for sprint in [ sprint.raw for sprint in jira.sprints(board_id=board["id"]) ]:
                     if "activatedDate" in sprint and sprint["activatedDate"] >= activated_date and sprint["id"] not in sprint_ids:

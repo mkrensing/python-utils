@@ -13,17 +13,17 @@ class ConfluenceClient:
         self.hostname = hostname
         self.access_token = access_token
 
-    def get_config(self, page_id: str, board_id: str) -> Dict:
+    def get_config(self, page_id: str, config_id: str) -> Dict:
 
         if not self.hostname:
-            return { **self.get_testdata("General"), **self.get_testdata(board_id) }
+            return { **self.get_testdata("General"), **self.get_testdata(config_id) }
 
         xml_content = self.get_page_xml_content(page_id)
 
         general_config = self.get_config_by_xml_content("General", xml_content) or {}
-        board_config = self.get_config_by_xml_content(board_id, xml_content) or {}
+        config = self.get_config_by_xml_content(config_id, xml_content) or {}
 
-        return {**general_config, **board_config}
+        return {**general_config, **config}
 
     def get_page_xml_content(self, page_id: str) -> str:
 
@@ -45,10 +45,10 @@ class ConfluenceClient:
         return xml_content
 
     @staticmethod
-    def get_config_by_xml_content(board_id: str, xml_content: str) -> Dict:
+    def get_config_by_xml_content(config_id: str, xml_content: str) -> None | Dict:
         xml_string = XMLString(xml_content, namespaces=['ac', 'ri'])
         board_configuration = xml_string.xpath_first_match(
-            f"//ac:structured-macro[@ac:name='code'][ac:parameter[@ac:name='title' and text()='{board_id}']]/ac:plain-text-body")
+            f"//ac:structured-macro[@ac:name='code'][ac:parameter[@ac:name='title' and text()='{config_id}']]/ac:plain-text-body")
         if not board_configuration:
             return None
 
@@ -98,7 +98,7 @@ class ConfluenceClient:
         return content
 
     @staticmethod
-    def get_testdata(board_id: str) -> Dict:
-        filename = lookup_file(f"testdata/{board_id}.yaml")
+    def get_testdata(config_id: str) -> Dict:
+        filename = lookup_file(f"testdata/{config_id}.yaml")
         with open(filename, "r", encoding="UTF-8") as testfile:
             return yaml.safe_load(testfile.read().replace("\t", "  "))
