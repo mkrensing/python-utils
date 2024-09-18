@@ -1,5 +1,6 @@
 import re
-from typing import List
+from typing import List, Dict
+
 SPRINT_PATTERN = r"com\.atlassian\.greenhopper\.service\.sprint\.Sprint@[A-Za-z0-9]*\[id=(\d+),.*,state=([^,]+),.*name=([^,]+),startDate=([^,]+),endDate=([^,]+),completeDate=([^,]+),activatedDate=([^,]+),.*"
 
 
@@ -36,11 +37,20 @@ class Sprint:
 
 
 def extract_sprint_name(sprint_object: str) -> List | str | None:
-
     if not sprint_object:
         return None
 
     if isinstance(sprint_object, list):
-        return [ extract_sprint_name(item) for item in sprint_object ]
+        return [extract_sprint_name(item) for item in sprint_object]
 
     return Sprint(str(sprint_object)).sprint_name
+
+
+def sprint_to_json(sprint_object: str) -> None | List[Dict[str, str]] | Dict[str, str]:
+    if not sprint_object:
+        return None
+
+    if isinstance(sprint_object, list):
+        return [extract_sprint_name(item) for item in sprint_object]
+
+    return Sprint(str(sprint_object)).__dict__()
