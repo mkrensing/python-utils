@@ -162,7 +162,7 @@ class JiraClient:
         @profiling()
         def __get_issues(jql: str, use_cache: bool, expand: str, page_size: int, start_at: int) -> JiraPageResult:
 
-            if self.test_mode or use_cache:
+            if use_cache:
                 jira_page = self.query_cache.get_all_pages(jql, start_at)
                 if jira_page:
                     logger.info(
