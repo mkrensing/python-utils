@@ -19,6 +19,7 @@ class JiraHistoryConfig:
     def is_valid(self) -> bool:
         return "jql" in self.jira_config and \
             "useCache" in self.jira_config and \
+            "pageSize" in self.jira_config and \
             "fields" in self.jira_config
 
     def get_jql(self):
@@ -26,6 +27,9 @@ class JiraHistoryConfig:
 
     def is_use_cache(self) -> bool:
         return bool(self.jira_config["useCache"])
+
+    def get_page_size(self) -> int:
+        return self.jira_config["pageSize"]
 
     def get_fields(self) -> Dict[str, str]:
         return self.jira_config["fields"]
@@ -56,7 +60,7 @@ def post_search_history(start_at: int):
         if not config.is_valid():
             return response_json({"error": f"Invalid request body. Expected JiraHistoryConfig"}), 400
 
-        jira_page = jira_client.get_issues(jql=config.get_jql(), access_token=get_access_token(), use_cache=config.is_use_cache(), start_at=start_at, page_size=200)
+        jira_page = jira_client.get_issues(jql=config.get_jql(), access_token=get_access_token(), use_cache=config.is_use_cache(), start_at=start_at, page_size=config.get_page_size())
         issues = jira_page.get_issues()
         history_issues = convert_to_history_issues(issues, config.get_fields())
 

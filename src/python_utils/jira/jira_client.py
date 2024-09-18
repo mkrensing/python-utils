@@ -151,18 +151,16 @@ class JiraClient:
     def set_test_mode(self, test_mode: bool):
         self.test_mode = test_mode
 
-    def get_issues(self, jql: str, access_token: str, use_cache: bool, expand="changelog", page_size=200, start_at=0,
-                   search_all_in_once=False) -> JiraPageResult:
+    def get_issues(self, jql: str, access_token: str, use_cache: bool, expand="changelog", page_size=200, start_at=0) -> JiraPageResult:
         logger.debug(
-            f"get_issues(jql={jql}, use_cache={use_cache}, expand={expand}, page_size={page_size}, start_at={start_at}, search_all_in_once={search_all_in_once}")
+            f"get_issues(jql={jql}, use_cache={use_cache}, expand={expand}, page_size={page_size}, start_at={start_at}")
 
         @profiling()
         def __add_page_to_cache(jql: str, jira_page: JiraPageResult):
             self.query_cache.add_page(jql, jira_page)
 
         @profiling()
-        def __get_issues(jql: str, use_cache: bool, expand: str, page_size: int, start_at: int,
-                         search_all_in_once: bool) -> JiraPageResult:
+        def __get_issues(jql: str, use_cache: bool, expand: str, page_size: int, start_at: int) -> JiraPageResult:
 
             if self.test_mode or use_cache:
                 jira_page = self.query_cache.get_all_pages(jql, start_at)
@@ -177,23 +175,13 @@ class JiraClient:
 
             jira_page = self.search(jql, access_token, expand, page_size, start_at)
 
-            if search_all_in_once:
-                next_page = jira_page
-                issues = []
-                issues.extend(jira_page.get_issues())
-                while next_page.has_next():
-                    next_page = self.search(jql, access_token, expand, page_size, next_page.get_next_start_at())
-                    issues.extend(next_page.get_issues())
-                jira_page = JiraPageResult(start_at, len(issues), issues)
-                logger.info(f"search_all_in_once activ! Return for {jql}: List with {jira_page.get_total()} issues")
-
             if use_cache:
                 logger.info(f"Add {jql} to cache: {len(jira_page.get_issues())} items")
                 __add_page_to_cache(jql, jira_page)
 
             return jira_page
 
-        return __get_issues(jql, use_cache, expand, page_size, start_at, search_all_in_once)
+        return __get_issues(jql, use_cache, expand, page_size, start_at)
 
     def search(self, jql: str, access_token: str, expand: str, page_size: int, start_at: int) -> JiraPageResult:
         with self.jira_backend_lock:
