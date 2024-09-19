@@ -11,3 +11,4 @@ schedule
 jira
 PyYaml
 lxml
+certifi
