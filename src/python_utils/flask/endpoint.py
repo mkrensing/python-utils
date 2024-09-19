@@ -3,7 +3,7 @@ import logging
 from flask import Flask, Response, Blueprint, send_from_directory, request
 from typing import Dict, Tuple
 from python_utils.file import lookup_directory
-
+import datetime
 import json
 
 init_service_functions = []
@@ -95,11 +95,15 @@ def response_text(text: str) -> Response:
     return response
 
 
-def response_cookie(cookie_name: str, cookie_value: str) -> Response:
-    response = Response()
+def response_cookie(cookie_name: str, cookie_value: str, object: dict):
+    json = object_to_json(object)
+    response = Response(json, mimetype='application/json')
     response.headers["Content-Type"] = "application/json; charset=utf-8"
-    response.set_cookie(key=cookie_name, value=cookie_value)
+    response.set_cookie(key=cookie_name, value=cookie_value, expires=get_expire_date(90))
     return response
+
+def get_expire_date(days: int) -> datetime:
+    return datetime.datetime.now() + datetime.timedelta(days=days)
 
 
 def object_to_json(some_object: Dict) -> bytes:
