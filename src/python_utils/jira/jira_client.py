@@ -194,11 +194,12 @@ class JiraClient:
             issues = [issue.raw for issue in result_set]
             return JiraPageResult(start_at=result_set.startAt, total=result_set.total, issues=issues)
 
-    def get_sprints_for_project(self, project_id: str, name_filter: str, activated_date: str, access_token: str) -> List[Dict[str, str]]:
+    def get_sprints_for_project(self, project_id: str, name_filter: str, activated_date: str, access_token: str, force_reload = False) -> List[Dict[str, str]]:
 
-        sprints = self.sprint_cache.get_sprints(project_id, name_filter, activated_date)
-        if sprints:
-            return sprints
+        if not force_reload:
+            sprints = self.sprint_cache.get_sprints(project_id, name_filter, activated_date)
+            if sprints:
+                return sprints
 
         with self.jira_backend_lock:
             sprint_ids = []

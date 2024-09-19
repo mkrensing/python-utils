@@ -32,8 +32,11 @@ def shutdown_endpoint():
 @jira_endpoint.route('/sprints/<project_id>/<name_filter>/<activated_date>', methods=["GET"])
 @token_required()
 def get_sprints_for_project(project_id: str, name_filter: str, activated_date: str):
+
+    force_reload = (request.args["force_reload"] == "true") if "force_reload" in request.args else False
+
     return response_json(
-        jira_client.get_sprints_for_project(project_id, name_filter, activated_date, access_token=get_access_token()))
+        jira_client.get_sprints_for_project(project_id, name_filter, activated_date, access_token=get_access_token(), force_reload=force_reload))
 
 
 @init_endpoint
