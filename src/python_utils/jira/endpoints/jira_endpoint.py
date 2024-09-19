@@ -1,8 +1,9 @@
-from flask import Blueprint
+import os
+from flask import Blueprint, request
 from python_utils.jira.jira_client import JiraClient
-from python_utils.flask.endpoint import response_json, destroy_endpoint
+from python_utils.flask.endpoint import response_json, destroy_endpoint, init_endpoint, response_cookie
 from python_utils.env import inject_environment
-from python_utils.file import lookup_file
+from python_utils.file import lookup_file, file_exists
 from python_utils.jira.jira_security import token_required, get_access_token
 from python_utils.jira.jira_security import read_tokens, write_tokens, register_token, logout, is_logged_in
 
@@ -52,7 +53,7 @@ def shutdown_endpoint(filename: str):
         write_tokens(filename)
 
 
-@auth_endpoint.route("/login")
+@jira_endpoint.route("/login")
 def get_login():
     token = request.args.get("token")
     auth_id = register_token(token)
@@ -60,7 +61,7 @@ def get_login():
     return response_cookie("auth_id", auth_id, {"message": "Token registered", "auth_id": auth_id })
 
 
-@auth_endpoint.route("/logout")
+@jira_endpoint.route("/logout")
 def get_logout():
     if not is_logged_in():
         return response_json({"result": "SKIPPED"})
