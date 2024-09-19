@@ -4,6 +4,7 @@ from python_utils.flask.endpoint import response_json, destroy_endpoint
 from python_utils.env import inject_environment
 from python_utils.file import lookup_file
 from python_utils.jira.jira_security import token_required, get_access_token
+from python_utils.jira.jira_security import read_tokens, write_tokens, register_token, logout, is_logged_in
 
 jira_endpoint = Blueprint('jira_endpoint', __name__, url_prefix='/rest/jira')
 
@@ -33,3 +34,36 @@ def get_sprints_for_project(project_id: str, name_filter: str, activated_date: s
     return response_json(
         jira_client.get_sprints_for_project(project_id, name_filter, activated_date, access_token=get_access_token()))
 
+
+@init_endpoint
+@inject_environment({"TOKEN_FILENAME": lookup_file("storage/token.json")})
+def init_security(filename: str):
+    print(f"init_security: {filename}")
+    if file_exists(filename):
+        read_tokens(filename)
+        os.remove(filename)
+
+
+@destroy_endpoint
+@inject_environment({"TOKEN_FILENAME": lookup_file("storage/token.json")})
+def shutdown_endpoint(filename: str):
+    print(f"shutdown_endpoint: {filename}")
+    if filename:
+        write_tokens(filename)
+
+
+@auth_endpoint.route("/login")
+def get_login():
+    token = request.args.get("token")
+    auth_id = register_token(token)
+
+    return response_cookie("auth_id", auth_id, {"message": "Token registered", "auth_id": auth_id })
+
+
+@auth_endpoint.route("/logout")
+def get_logout():
+    if not is_logged_in():
+        return response_json({"result": "SKIPPED"})
+
+    logout()
+    return response_json({"result": "OK"})
