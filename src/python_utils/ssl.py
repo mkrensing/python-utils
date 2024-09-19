@@ -17,6 +17,5 @@ def register_root_certificate(root_ca_filename: str):
                 outfile.write(b'\n')
                 outfile.write(certificate)
                 print(f"Added Root Cert to {cafile}.")
-                import certifi.core
 
     os.environ["REQUESTS_CA_BUNDLE"] = cafile
