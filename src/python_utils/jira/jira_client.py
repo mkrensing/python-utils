@@ -143,12 +143,10 @@ class SprintCache:
 
 class JiraClient:
 
-    def __init__(self, hostname: str, query_cache_filename: str, sprint_cache_filename: str, jira_backend_lock_filename: str, test_mode: bool, max_result_size=700):
+    def __init__(self, hostname: str, query_cache_filename: str, sprint_cache_filename: str, test_mode=False, max_result_size=700):
         self.hostname = hostname
         self.query_cache = QueryCache(filename=query_cache_filename)
         self.sprint_cache = SprintCache(filename=sprint_cache_filename)
-        Path(jira_backend_lock_filename).touch()
-        self.jira_backend_lock = FileLock(jira_backend_lock_filename)
         self.test_mode = test_mode
         self.max_result_size = max_result_size
         self.active_paginations = shared_dict()
@@ -188,11 +186,10 @@ class JiraClient:
         return __get_issues(jql, use_cache, expand, page_size, start_at)
 
     def search(self, jql: str, access_token: str, expand: str, page_size: int, start_at: int) -> JiraPageResult:
-        with self.jira_backend_lock:
-            jira = JIRA(self.hostname, token_auth=access_token)
-            result_set = jira.search_issues(jql, expand=expand, maxResults=page_size, startAt=start_at)
-            issues = [issue.raw for issue in result_set]
-            return JiraPageResult(start_at=result_set.startAt, total=result_set.total, issues=issues)
+        jira = JIRA(self.hostname, token_auth=access_token)
+        result_set = jira.search_issues(jql, expand=expand, maxResults=page_size, startAt=start_at)
+        issues = [issue.raw for issue in result_set]
+        return JiraPageResult(start_at=result_set.startAt, total=result_set.total, issues=issues)
 
     def get_sprints_for_project(self, project_id: str, name_filter: str, activated_date: str, access_token: str, force_reload = False) -> List[Dict[str, str]]:
 
@@ -201,18 +198,17 @@ class JiraClient:
             if sprints:
                 return sprints
 
-        with self.jira_backend_lock:
-            sprint_ids = []
-            sprints = []
-            jira = JIRA(self.hostname, token_auth=access_token)
-            boards = self.get_boards_for_project(jira, project_id, name_filter)
-            for board in boards:
-                for sprint in [ sprint.raw for sprint in jira.sprints(board_id=board["id"]) ]:
-                    if "activatedDate" in sprint and sprint["activatedDate"] >= activated_date and sprint["id"] not in sprint_ids:
-                        sprint_ids.append(sprint["id"])
-                        sprints.append(sprint)
+        sprint_ids = []
+        sprints = []
+        jira = JIRA(self.hostname, token_auth=access_token)
+        boards = self.get_boards_for_project(jira, project_id, name_filter)
+        for board in boards:
+            for sprint in [ sprint.raw for sprint in jira.sprints(board_id=board["id"]) ]:
+                if "activatedDate" in sprint and sprint["activatedDate"] >= activated_date and sprint["id"] not in sprint_ids:
+                    sprint_ids.append(sprint["id"])
+                    sprints.append(sprint)
 
-            self.sprint_cache.add_sprints(project_id, name_filter, activated_date, sprints)
+        self.sprint_cache.add_sprints(project_id, name_filter, activated_date, sprints)
 
         return sprints
 

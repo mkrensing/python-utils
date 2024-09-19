@@ -41,7 +41,7 @@ class JiraHistoryConfig:
      "SPRINT_CACHE_FILENAME": lookup_file("storage/sprint_cache.json"),
      "TEST_MODE": "False"})
 def create_jira_client(hostname: str, query_cache_filename: str, sprint_cache_filename, test_mode: str) -> JiraClient:
-    return JiraClient(hostname=hostname, query_cache_filename=query_cache_filename, sprint_cache_filename=sprint_cache_filename, jira_backend_lock_filename="jira.lock",
+    return JiraClient(hostname=hostname, query_cache_filename=query_cache_filename, sprint_cache_filename=sprint_cache_filename,
                       test_mode=test_mode.lower() in ["true", "1"])
 
 
