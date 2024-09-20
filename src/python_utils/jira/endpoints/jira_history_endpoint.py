@@ -64,7 +64,7 @@ def post_search_history(start_at: int):
         issues = jira_page.get_issues()
         history_issues = convert_to_history_issues(issues, config.get_fields())
 
-        return response_json({ "nextStartAt": jira_page.get_next_start_at(), "hasNext": jira_page.has_next(), "total": jira_page.get_total(), "issues": history_issues })
+        return response_json({ "nextStartAt": jira_page.get_next_start_at(), "hasNext": jira_page.has_next(), "total": jira_page.get_total(), "timestamp": jira_page.get_timestamp(), "issues": history_issues })
 
     except Exception as e:
         print(e)

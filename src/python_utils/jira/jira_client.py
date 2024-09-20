@@ -2,6 +2,7 @@ import sys
 import logging
 from pathlib import Path
 from typing import List, Dict, Callable
+from datetime import datetime
 
 from jira import JIRA
 from tinydb import TinyDB, Query, where
@@ -9,7 +10,6 @@ from tinydb.middlewares import CachingMiddleware
 from tinydb.storages import JSONStorage
 
 from filelock import FileLock
-from python_utils.flask.shared import shared_dict
 from python_utils.profiler import profiling
 
 logger = logging.getLogger(__name__)
@@ -17,9 +17,10 @@ logger = logging.getLogger(__name__)
 
 class JiraPageResult:
 
-    def __init__(self, start_at: int, total: int, issues: List[Dict]):
+    def __init__(self, start_at: int, total: int, timestamp: str, issues: List[Dict]):
         self.start_at = start_at
         self.total = total
+        self.timestamp = timestamp
         self.issues = issues
 
     def get_start_at(self) -> int:
@@ -37,8 +38,11 @@ class JiraPageResult:
     def has_next(self) -> bool:
         return self.get_next_start_at() < self.total
 
+    def get_timestamp(self) -> str:
+        return self.timestamp
+
     def __dict__(self) -> Dict:
-        return {"nextStartAt": self.get_next_start_at(), "hasNext": self.has_next(), "total": self.total,
+        return {"nextStartAt": self.get_next_start_at(), "hasNext": self.has_next(), "total": self.total, "timestamp": self.timestamp,
                 "issues(count)": len(self.issues)}
 
 
@@ -57,11 +61,13 @@ class QueryCache:
             return None
         issues = []
         total = 0
+        timestamp = ""
         for page in result:
             issues.extend(page["issues"])
             total = max(total, page["total"])
+            timestamp = max(timestamp, page["timestamp"])
 
-        return JiraPageResult(start_at=start_at, total=total, issues=issues)
+        return JiraPageResult(start_at=start_at, total=total, timestamp=timestamp, issues=issues)
 
     def remove_all_pages(self, jql: str):
         cached_queries = Query()
@@ -79,13 +85,13 @@ class QueryCache:
             raise Exception(f"Found two matches for jql: {jql}")
 
         page = result[0]
-        return JiraPageResult(start_at=start_at, total=page["total"], issues=page["issues"])
+        return JiraPageResult(start_at=start_at, total=page["total"], timestamp=page["timestamp"], issues=page["issues"])
 
     def add_page(self, jql, page: JiraPageResult):
         cached_queries = Query()
         with self.lock:
             self.db.upsert(
-                {"jql": jql, "startAt": page.get_start_at(), "total": page.get_total(), "issues": page.get_issues()},
+                {"jql": jql, "startAt": page.get_start_at(), "total": page.get_total(), "timestamp": page.get_timestamp(), "issues": page.get_issues()},
                 (cached_queries.jql == jql) & (cached_queries.startAt == page.get_start_at()))
             self.db.storage.flush()
 
@@ -113,7 +119,8 @@ class SprintCache:
 
     def get_sprints(self, project_id: str, name_filter: str, activated_date: str) -> List[Dict[str, str]]:
         cached_queries = Query()
-        result = self.db.search((cached_queries.id == self.create_record_id(project_id, name_filter, activated_date)) & (cached_queries.timestamp == self.current_timestamp()))
+        result = self.db.search(
+            (cached_queries.id == self.create_record_id(project_id, name_filter, activated_date)) & (cached_queries.timestamp == self.current_timestamp()))
         if not result:
             return None
 
@@ -123,7 +130,7 @@ class SprintCache:
         cached_queries = Query()
         with self.lock:
             record_id = self.create_record_id(project_id, name_filter, activated_date)
-            self.db.upsert({"id": record_id, "timestamp": self.current_timestamp(), "sprints": sprints }, (cached_queries.id == record_id))
+            self.db.upsert({"id": record_id, "timestamp": self.current_timestamp(), "sprints": sprints}, (cached_queries.id == record_id))
             self.db.storage.flush()
 
     @staticmethod
@@ -149,7 +156,6 @@ class JiraClient:
         self.sprint_cache = SprintCache(filename=sprint_cache_filename)
         self.test_mode = test_mode
         self.max_result_size = max_result_size
-        self.active_paginations = shared_dict()
 
     def set_test_mode(self, test_mode: bool):
         self.test_mode = test_mode
@@ -174,7 +180,7 @@ class JiraClient:
 
             if self.test_mode:
                 logger.info(f"TEST_MODE active. Return empty result for jql {jql}")
-                return JiraPageResult(start_at=0, total=0, issues=[])
+                return JiraPageResult(start_at=0, total=0, timestamp=now(), issues=[])
 
             jira_page = self.search(jql, access_token, expand, page_size, start_at)
 
@@ -189,9 +195,9 @@ class JiraClient:
         jira = JIRA(self.hostname, token_auth=access_token)
         result_set = jira.search_issues(jql, expand=expand, maxResults=page_size, startAt=start_at)
         issues = [issue.raw for issue in result_set]
-        return JiraPageResult(start_at=result_set.startAt, total=result_set.total, issues=issues)
+        return JiraPageResult(start_at=result_set.startAt, total=result_set.total, timestamp=now(), issues=issues)
 
-    def get_sprints_for_project(self, project_id: str, name_filter: str, activated_date: str, access_token: str, force_reload = False) -> List[Dict[str, str]]:
+    def get_sprints_for_project(self, project_id: str, name_filter: str, activated_date: str, access_token: str, force_reload=False) -> List[Dict[str, str]]:
 
         if not force_reload:
             sprints = self.sprint_cache.get_sprints(project_id, name_filter, activated_date)
@@ -203,7 +209,7 @@ class JiraClient:
         jira = JIRA(self.hostname, token_auth=access_token)
         boards = self.get_boards_for_project(jira, project_id, name_filter)
         for board in boards:
-            for sprint in [ sprint.raw for sprint in jira.sprints(board_id=board["id"]) ]:
+            for sprint in [sprint.raw for sprint in jira.sprints(board_id=int(board["id"]))]:
                 if "activatedDate" in sprint and sprint["activatedDate"] >= activated_date and sprint["id"] not in sprint_ids:
                     sprint_ids.append(sprint["id"])
                     sprints.append(sprint)
@@ -211,7 +217,6 @@ class JiraClient:
         self.sprint_cache.add_sprints(project_id, name_filter, activated_date, sprints)
 
         return sprints
-
 
     def get_boards_for_project(self, jira: JIRA, project_id: str, name_filter: str) -> List[Dict[str, str]]:
         boards = []
@@ -224,3 +229,8 @@ class JiraClient:
     def close(self):
         if self.query_cache:
             self.query_cache.close()
+
+
+def now() -> str:
+    current_date = datetime.now()
+    return current_date.isoformat()
