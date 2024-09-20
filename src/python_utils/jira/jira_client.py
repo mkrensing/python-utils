@@ -1,8 +1,7 @@
-import sys
 import logging
 from pathlib import Path
-from typing import List, Dict, Callable
-from datetime import datetime
+from typing import List, Dict
+from python_utils.timestamp import now
 
 from jira import JIRA
 from tinydb import TinyDB, Query, where
@@ -231,6 +230,6 @@ class JiraClient:
             self.query_cache.close()
 
 
-def now() -> str:
-    current_date = datetime.now()
-    return current_date.isoformat()
+
+
+

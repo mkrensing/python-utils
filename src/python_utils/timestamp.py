@@ -1,5 +1,5 @@
 from typing import List, Tuple
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 
 def last_day_of_month(any_day):
     # The day 28 exists in every month. 4 days later, it's always next month
@@ -94,3 +94,8 @@ def from_iso_date(timestamp_iso_format: str) -> date:
 
 def timestamp_to_date(timestamp_iso_format: str) -> str:
     return timestamp_iso_format.split("T")[0]
+
+def now() -> str:
+    current_time_zone = datetime.now(timezone.utc).astimezone().tzinfo
+    current_date = datetime.now(current_time_zone)
+    return current_date.isoformat()
