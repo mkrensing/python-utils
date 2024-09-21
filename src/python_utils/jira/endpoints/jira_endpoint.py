@@ -26,6 +26,7 @@ jira_client = create_jira_client()
 
 @destroy_endpoint
 def shutdown_endpoint():
+    print("Closing jira_client...")
     jira_client.close()
 
 
