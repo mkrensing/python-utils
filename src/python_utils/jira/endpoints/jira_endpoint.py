@@ -48,8 +48,6 @@ def shutdown_endpoint(filename: str):
     if filename:
         write_tokens(filename)
 
-    print("Closing jira_client...")
-    jira_client.close()
 
 @jira_endpoint.route("/login")
 def get_login():
