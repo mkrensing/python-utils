@@ -48,7 +48,7 @@ def shutdown_endpoint(filename: str):
     print(f"shutdown_endpoint: {filename}")
     if filename:
         write_tokens(filename)
-        
+
     print("Closing jira_client...")
     jira_client.close()
 

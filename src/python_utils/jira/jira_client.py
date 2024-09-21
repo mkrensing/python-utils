@@ -100,8 +100,7 @@ class QueryCache:
 
     def close(self):
         if self.db:
-            with self.lock:
-                self.db.close()
+            self.db.close()
 
 
 class SprintCache:
@@ -143,8 +142,7 @@ class SprintCache:
 
     def close(self):
         if self.db:
-            with self.lock:
-                self.db.close()
+            self.db.close()
 
 
 class JiraClient:
