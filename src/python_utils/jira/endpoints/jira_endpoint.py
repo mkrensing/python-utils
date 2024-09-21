@@ -45,7 +45,6 @@ def init_security(filename: str):
 @destroy_endpoint
 @inject_environment({"TOKEN_FILENAME": lookup_file("storage/token.json")})
 def shutdown_endpoint(filename: str):
-    print(f"shutdown_endpoint: {filename}")
     if filename:
         write_tokens(filename)
 
