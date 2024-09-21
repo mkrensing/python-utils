@@ -23,13 +23,6 @@ def create_jira_client(hostname: str, query_cache_filename: str, sprint_cache_fi
 
 jira_client = create_jira_client()
 
-
-@destroy_endpoint
-def shutdown_endpoint():
-    print("Closing jira_client...")
-    jira_client.close()
-
-
 @jira_endpoint.route('/sprints/<project_id>/<name_filter>/<activated_date>', methods=["GET"])
 @token_required()
 def get_sprints_for_project(project_id: str, name_filter: str, activated_date: str):
@@ -52,6 +45,8 @@ def init_security(filename: str):
 @destroy_endpoint
 @inject_environment({"TOKEN_FILENAME": lookup_file("storage/token.json")})
 def shutdown_endpoint(filename: str):
+    print("Closing jira_client...")
+    jira_client.close()
     print(f"shutdown_endpoint: {filename}")
     if filename:
         write_tokens(filename)
