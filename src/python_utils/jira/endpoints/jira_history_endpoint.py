@@ -47,11 +47,6 @@ def create_jira_client(hostname: str, query_cache_filename: str, sprint_cache_fi
 
 jira_client = create_jira_client()
 
-@destroy_endpoint
-def shutdown_endpoint():
-    jira_client.close()
-
-
 @jira_history_endpoint.route('/search/<int:start_at>', methods=["POST"])
 @token_required()
 def post_search_history(start_at: int):
