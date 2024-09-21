@@ -74,6 +74,7 @@ def destroy_endpoints_on_exit(flask: Flask):
 
 
 def destroy_endpoints(flask: Flask):
+    print(f"destroy_endpoints: {destroy_endpoint_functions}")
     with flask.app_context():
         for destroy_function in destroy_endpoint_functions:
             destroy_function()
