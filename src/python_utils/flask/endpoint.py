@@ -75,10 +75,12 @@ def destroy_endpoints_on_exit(flask: Flask):
 
 def destroy_endpoints(flask: Flask):
     print(f"destroy_endpoints: {destroy_endpoint_functions}")
-    with flask.app_context():
-        for destroy_function in destroy_endpoint_functions:
-            destroy_function()
-
+    try:
+        with flask.app_context():
+            for destroy_function in destroy_endpoint_functions:
+                destroy_function()
+    except Exception as e:
+        print(f"Error during destroy_endpoints: {e}")
 
 def destroy_endpoint(destroy_function):
     destroy_endpoint_functions.append(destroy_function)
