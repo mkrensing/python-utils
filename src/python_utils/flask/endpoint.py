@@ -70,7 +70,6 @@ def init_endpoint(init_function):
 def destroy_endpoints_on_exit(flask: Flask):
     import signal
     signal.signal(signal.SIGUSR1, lambda *x: destroy_endpoints(flask))
-    atexit.register(lambda *x: destroy_endpoints(flask))
 
 
 def destroy_endpoints(flask: Flask):
