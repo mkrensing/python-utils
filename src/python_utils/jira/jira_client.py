@@ -228,7 +228,8 @@ class JiraClient:
     def close(self):
         if self.query_cache:
             self.query_cache.close()
-
+        if self.sprint_cache:
+            self.sprint_cache.close()
 
 
 
