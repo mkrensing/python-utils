@@ -61,13 +61,17 @@ def register_token(token: str) -> str:
 
 
 def read_tokens(filename: str) -> Dict:
+    print(f"read_tokens {filename}")
     if not file_exists(filename):
+        print("file not exist")
         return {}
 
     with open(filename, "r") as file:
         persistent_tokens = json.load(file)
         for auth_id in persistent_tokens:
             authenticated_tokens[auth_id] = persistent_tokens[auth_id]
+
+    print(f"read_tokens: {authenticated_tokens}")
 
 
 def write_tokens(filename: str):
