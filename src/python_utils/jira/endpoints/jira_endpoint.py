@@ -12,8 +12,8 @@ jira_endpoint = Blueprint('jira_endpoint', __name__, url_prefix='/rest/jira')
 
 @inject_environment(
     {"JIRA_HOSTNAME": "",
-     "QUERY_CACHE_FILENAME": lookup_file("storage/query_cache.json"),
-     "SPRINT_CACHE_FILENAME": lookup_file("storage/sprint_cache.json"),
+     "QUERY_CACHE_FILENAME": lambda: lookup_file("storage/query_cache.json"),
+     "SPRINT_CACHE_FILENAME": lambda: lookup_file("storage/sprint_cache.json"),
      "TEST_MODE": "False"})
 def create_jira_client(hostname: str, query_cache_filename: str, sprint_cache_filename, test_mode: str) -> JiraClient:
     return JiraClient(hostname=hostname, query_cache_filename=query_cache_filename,
