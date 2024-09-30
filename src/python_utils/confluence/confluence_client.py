@@ -46,13 +46,13 @@ class ConfluenceClient:
 
     @staticmethod
     def get_config_by_xml_content(config_id: str, xml_content: str) -> None | Dict:
-        xml_string = XMLString(xml_content, namespaces=['ac', 'ri'])
+        xml_string = XMLString(xml_content)
         board_configuration = xml_string.xpath_first_match(
             f"//ac:structured-macro[@ac:name='code'][ac:parameter[@ac:name='title' and text()='{config_id}']]/ac:plain-text-body")
         if not board_configuration:
             return None
 
-        return yaml.safe_load(board_configuration.replace("\t", "  "))
+        return yaml.safe_load(board_configuration.text().replace("\t", "  "))
 
 
     def get_file(self, page_id: str, filename: str) -> str:

@@ -1,6 +1,7 @@
 from typing import List, Dict
 from lxml import etree
 import re
+import html
 
 def remove_namespace_declarations(xml_content: str) -> str:
     # Regex, um alle Namespace-Deklarationen zu finden und zu entfernen
@@ -26,9 +27,9 @@ class XMLMatch:
 
 class XMLString:
 
-    def __init__(self, xml_content: str):
-        self.xml_content = xml_content
-        self.namespaces = XMLString.create_namespaces_dict(self.extract_namespaces(xml_content))
+    def __init__(self, html_content: str):
+        self.xml_content = html.unescape(html_content)
+        self.namespaces = XMLString.create_namespaces_dict(self.extract_namespaces(self.xml_content))
         self.root = etree.fromstring(
             f"<root {XMLString.create_namespaces_declarations(self.namespaces)} >{self.xml_content}</root>")
 
