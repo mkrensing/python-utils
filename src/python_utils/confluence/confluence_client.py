@@ -27,7 +27,7 @@ class ConfluenceClient:
 
     def get_page_xml_content(self, page_id: str) -> str:
 
-        url = f"{self.hostname}/confluence/rest/api/content/{page_id}?expand=body.storage"
+        url = f"{self.hostname}/rest/api/content/{page_id}?expand=body.storage"
 
         headers = {
             "Authorization": f"Bearer {self.access_token}"
