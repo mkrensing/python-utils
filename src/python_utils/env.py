@@ -1,5 +1,15 @@
 import os
 from functools import wraps
+import yaml
+
+
+def load_from_file(filename: str):
+
+    with open(filename, 'r') as file:
+        config = yaml.safe_load(file)
+
+    for key, value in config.items():
+        os.environ[key] = str(value)
 
 
 def inject_environment(environment_variables: {}, required=False):
