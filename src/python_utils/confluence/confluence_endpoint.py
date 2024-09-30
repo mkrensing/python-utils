@@ -5,12 +5,12 @@ from python_utils.flask.endpoint import response_json
 from python_utils.env import inject_environment
 
 
-@inject_environment({"CONFLUENCE_HOSTNAME": "", "CONFLUENCE_ACCESS_TOKEN": ""})
+@inject_environment({"CONFLUENCE_HOSTNAME": "", "CONFLUENCE_ACCESS_TOKEN": ""}, required=True)
 def create_confluence_client(hostname: str, access_token: str) -> ConfluenceClient:
     return ConfluenceClient(hostname, access_token)
 
 
-@inject_environment({"CONFLUENCE_PAGE_ID": ""})
+@inject_environment({"CONFLUENCE_PAGE_ID": ""}, required=True)
 def get_config_page_id(page_id: str) -> str:
     return page_id
 

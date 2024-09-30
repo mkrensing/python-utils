@@ -42,6 +42,6 @@ def load_from_dict(yaml_dict: Dict):
         if value.startswith("file:"):
             filename = value.split("file:")[1]
             with open(filename, 'r') as file:
-                os.environ[key] = file.read()
+                os.environ[key] = file.read().replace("\n", "")
         else:
             os.environ[key] = value
