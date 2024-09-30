@@ -37,9 +37,10 @@ class JiraHistoryConfig:
 
 @inject_environment(
     {"JIRA_HOSTNAME": "",
-     "QUERY_CACHE_FILENAME": lambda: lookup_file("storage/query_cache.json"),
-     "SPRINT_CACHE_FILENAME": lambda: lookup_file("storage/sprint_cache.json"),
-     "TEST_MODE": "False"})
+     "QUERY_CACHE_FILENAME": "",
+     "SPRINT_CACHE_FILENAME": "",
+     "TEST_MODE": "False"},
+    required=True)
 def create_jira_client(hostname: str, query_cache_filename: str, sprint_cache_filename, test_mode: str) -> JiraClient:
     return JiraClient(hostname=hostname, query_cache_filename=query_cache_filename, sprint_cache_filename=sprint_cache_filename,
                       test_mode=test_mode.lower() in ["true", "1"])
