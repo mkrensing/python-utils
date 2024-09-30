@@ -3,7 +3,12 @@ from functools import wraps
 import yaml
 
 
-def load_from_file(filename: str):
+def load_from_file(filename: str, ignore_not_found=False):
+
+    if not os.path.isfile(filename):
+        if ignore_not_found:
+            return
+        raise Exception(f"File not found: {filename}")
 
     with open(filename, 'r') as file:
         config = yaml.safe_load(file)
