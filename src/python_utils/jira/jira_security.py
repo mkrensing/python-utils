@@ -69,8 +69,6 @@ def read_tokens(filename: str) -> Dict:
         for auth_id in persistent_tokens:
             authenticated_tokens[auth_id] = persistent_tokens[auth_id]
 
-    print(f"read_tokens: {authenticated_tokens}")
-
 
 def write_tokens(filename: str):
     persistent_tokens = {}
