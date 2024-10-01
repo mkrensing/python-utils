@@ -54,65 +54,32 @@ class JiraBatchConfig:
 
 class JiraBatchProcessor:
 
-    def __init__(self, jira_client: JiraClient):
-        self.active_batches = shared_dict()
+    def __init__(self, jira_client: JiraClient, jira_access_token: str):
         self.jira_client = jira_client
+        self.jira_access_token = jira_access_token
 
-    def create_batch(self, config: JiraBatchConfig) -> str:
-        batch_id = str(uuid.uuid4())
-        self.active_batches[batch_id] = {
-            "config": config.__dict__(),
-            "batch": config.create_batch_config(),
-        }
+    def get_batch(self, config: JiraBatchConfig) -> (List[Dict[str, str]], str):
+        overall_issues = []
+        overall_timestamp = ""
+        batch_config = config.create_batch_config()
+        for batch_query in batch_config:
+            print(batch_query["description"])
+            (issues, timestamp) = self.paginate(batch_config[0]["jql"], use_cache=batch_query["use_cache"])
+            overall_issues.extend(issues)
+            overall_timestamp = timestamp
 
-        return batch_id
+        return overall_issues, overall_timestamp
 
-    def get_batch_size(self, batch_id: str) -> int:
+    def paginate(self, jql: str, use_cache: bool, page_size=200) -> (List[Dict], str):
+        page_result = self.jira_client.get_issues(jql=jql, access_token=self.jira_access_token, use_cache=use_cache, start_at=0,
+                                                  page_size=page_size)
+        print(page_result.__dict__())
+        issues = []
+        issues.extend(page_result.get_issues())
 
-        if not self.is_valid(batch_id):
-            return -1
+        while page_result.has_next():
+            page_result = self.jira_client.get_issues(jql=jql, access_token=jira_access_token, use_cache=use_cache,
+                                                      start_at=page_result.get_next_start_at(), page_size=page_size)
+            issues.extend(page_result.get_issues())
 
-        return len(self.active_batches[batch_id]["batch"])
-
-    def get_batch_config(self, batch_id: str) -> Dict:
-        if not self.is_valid(batch_id):
-            return {}
-
-        return self.active_batches[batch_id]["batch"]
-
-    def get_user_config(self, batch_id: str) -> Dict:
-        if not self.is_valid(batch_id):
-            return {}
-
-        return self.active_batches[batch_id]["config"]
-
-    def is_valid(self, batch_id: str) -> bool:
-        return batch_id and batch_id in self.active_batches
-
-    def close_batch(self, batch_id: str):
-        del self.active_batches[batch_id]
-
-    @profiling()
-    def get_batch(self, batch_id: str, index: int, start_at: int, access_token: str, initial_page_size=50, page_size=250,
-                  search_all_in_once=False) -> JiraPageResult:
-
-        if batch_id not in self.active_batches:
-            raise Exception(f"Batch not found with id: {batch_id}")
-
-        active_batch = self.active_batches[batch_id]
-
-        if not 0 <= index < len(active_batch["batch"]):
-            raise Exception(f"Invalid batch index: {index}")
-
-        batch = active_batch["batch"][index]
-
-        return self.jira_client.get_issues(jql=batch["jql"],
-                                           access_token=access_token,
-                                           use_cache=batch["use_cache"],
-                                           page_size=self.get_page_size(start_at, initial_page_size, page_size),
-                                           start_at=start_at,
-                                           search_all_in_once=search_all_in_once)
-
-    @staticmethod
-    def get_page_size(start_at: int, initial_page_size: int, page_size: int):
-        return initial_page_size if start_at == 0 else page_size
+        return issues, page_result.get_timestamp()
