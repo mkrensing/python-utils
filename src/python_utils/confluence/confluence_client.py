@@ -9,13 +9,14 @@ from python_utils.xml import XMLString
 
 class ConfluenceClient:
 
-    def __init__(self, hostname: str, access_token: str):
+    def __init__(self, hostname: str, access_token: str, test_mode=False):
         self.hostname = hostname
         self.access_token = access_token
+        self.test_mode = test_mode
 
     def get_config(self, page_id: str, config_id: str) -> Dict:
 
-        if not self.hostname:
+        if self.test_mode:
             return { **self.get_testdata("General"), **self.get_testdata(config_id) }
 
         xml_content = self.get_page_xml_content(page_id)

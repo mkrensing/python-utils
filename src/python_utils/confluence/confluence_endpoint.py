@@ -5,9 +5,9 @@ from python_utils.flask.endpoint import response_json
 from python_utils.env import inject_environment
 
 
-@inject_environment({"CONFLUENCE_HOSTNAME": "", "CONFLUENCE_ACCESS_TOKEN": ""}, required=True)
-def create_confluence_client(hostname: str, access_token: str) -> ConfluenceClient:
-    return ConfluenceClient(hostname, access_token)
+@inject_environment({"CONFLUENCE_HOSTNAME": "", "CONFLUENCE_ACCESS_TOKEN": "", "CONFLUENCE_TEST_MODE": ""}, required=True)
+def create_confluence_client(hostname: str, access_token: str, test_mode: str) -> ConfluenceClient:
+    return ConfluenceClient(hostname, access_token, test_mode.lower() in ["true", "1"])
 
 
 @inject_environment({"CONFLUENCE_PAGE_ID": ""}, required=True)
