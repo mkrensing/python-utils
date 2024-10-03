@@ -58,10 +58,9 @@ class JiraBatchProcessor:
         self.jira_client = jira_client
         self.jira_access_token = jira_access_token
 
-    def get_batch(self, config: JiraBatchConfig) -> (List[Dict[str, str]], str):
+    def get_batch(self, batch_config: List[Dict]) -> (List[Dict[str, str]], str):
         overall_issues = []
         overall_timestamp = ""
-        batch_config = config.create_batch_config()
         for batch_query in batch_config:
             print(batch_query["description"])
             (issues, timestamp) = self.paginate(batch_query["jql"], use_cache=batch_query["use_cache"])
