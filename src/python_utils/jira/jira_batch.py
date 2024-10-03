@@ -64,7 +64,7 @@ class JiraBatchProcessor:
         batch_config = config.create_batch_config()
         for batch_query in batch_config:
             print(batch_query["description"])
-            (issues, timestamp) = self.paginate(batch_config[0]["jql"], use_cache=batch_query["use_cache"])
+            (issues, timestamp) = self.paginate(batch_query["jql"], use_cache=batch_query["use_cache"])
             overall_issues.extend(issues)
             overall_timestamp = timestamp
 
@@ -78,7 +78,7 @@ class JiraBatchProcessor:
         issues.extend(page_result.get_issues())
 
         while page_result.has_next():
-            page_result = self.jira_client.get_issues(jql=jql, access_token=jira_access_token, use_cache=use_cache,
+            page_result = self.jira_client.get_issues(jql=jql, access_token=self.jira_access_token, use_cache=use_cache,
                                                       start_at=page_result.get_next_start_at(), page_size=page_size)
             issues.extend(page_result.get_issues())
 
