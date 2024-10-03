@@ -7,4 +7,13 @@ config = {
 }
 batch_config = JiraBatchConfig(config)
 queries = batch_config.create_batch_config()
-print(queries)
+assert queries[0]["use_cache"] == True
+assert queries[-1]["use_cache"] == False
+
+queries = batch_config.create_batch_config(reload_all=True)
+assert queries[0]["use_cache"] == False
+assert queries[-1]["use_cache"] == False
+
+queries = batch_config.create_batch_config(reload_current=False)
+assert queries[0]["use_cache"] == True
+assert queries[-1]["use_cache"] == True

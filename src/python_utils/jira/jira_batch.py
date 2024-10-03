@@ -26,7 +26,7 @@ class JiraBatchConfig:
     def get_start_date(self) -> str:
         return self.jira_config["start_date"]
 
-    def create_batch_config(self) -> List[Dict]:
+    def create_batch_config(self, reload_all=False, reload_current=True) -> List[Dict]:
         batch_configs = [{"jql": "project = Test AND ...", "use_cache": True, "description": "Some Description"}] and []
 
         # historical queries:
@@ -34,14 +34,14 @@ class JiraBatchConfig:
             jql = self.get_batch_jql()
             jql = jql.replace("{start_of_month}", start_of_month)
             jql = jql.replace("{end_of_month}", end_of_month)
-            batch_configs.append({"jql": jql, "use_cache": True, "description": f"Fetching data for {month_name}"})
+            batch_configs.append({"jql": jql, "use_cache": not reload_all, "description": f"Fetching data for {month_name}"})
 
         # current month:
         jql = self.get_jql()
         start_of_month, end_of_month, month_name = get_first_and_last_day_of_current_month()
         jql = jql.replace("{start_of_month}", start_of_month.strftime("%Y-%m-%d"))
         jql = jql.replace("{end_of_month}", end_of_month.strftime("%Y-%m-%d"))
-        batch_configs.append({"jql": jql, "use_cache": False, "description": f"Fetching data for {month_name}"})
+        batch_configs.append({"jql": jql, "use_cache": not reload_current, "description": f"Fetching data for {month_name}"})
 
         return batch_configs
 
