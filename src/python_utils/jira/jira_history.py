@@ -350,9 +350,9 @@ def create_state_configuration_object(state_configuration):
     }
 
 
-def get_lead_time_in_days(start, end=None):
+def get_lead_time_in_days(start, end=None) -> int:
     if not start:
-        return ""
+        return -1
 
     one_day = 24 * 60 * 60  # Sekunden in einem Tag
     end = end or datetime.now(UTC).isoformat()
