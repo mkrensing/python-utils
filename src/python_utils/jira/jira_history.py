@@ -276,3 +276,74 @@ def create_index_of_list_with_unique_keys(array_of_objects):
     for obj in array_of_objects:
         index.update(obj)
     return index
+
+
+def get_leadtime(history_issues, start_state_configuration, end_state_configuration):
+    return [
+        {
+            'key': history_issue['key'],
+            'start': find_timestamp(
+                history_issue,
+                create_state_configuration_object(start_state_configuration)['propertyName'],
+                create_state_configuration_object(start_state_configuration)['value'],
+                0
+            ),
+            'end': find_timestamp(
+                history_issue,
+                create_state_configuration_object(end_state_configuration)['propertyName'],
+                create_state_configuration_object(end_state_configuration)['value'],
+                -1
+            ),
+            'issue': history_issue
+        }
+        for history_issue in history_issues
+    ]
+
+
+def get_timestamp(history_issue, start_state_configuration):
+    start_state = create_state_configuration_object(start_state_configuration)
+    return find_timestamp(history_issue, start_state['propertyName'], start_state['value'], 0)
+
+
+def find_timestamp(history_issue, property_name, property_value, array_index):
+    if callable(property_value):
+        return find_timestamp_by_function(history_issue, property_name, property_value, array_index)
+    elif isinstance(property_value, list):
+        return find_timestamp_by_values(history_issue, property_name, property_value, array_index)
+    else:
+        return find_timestamp_by_value(history_issue, property_name, property_value, array_index)
+
+
+def find_timestamp_by_values(history_issue, property_name, property_values, array_index):
+    timestamps = [
+        find_timestamp_by_value(history_issue, property_name, property_value, array_index)
+        for property_value in property_values
+    ]
+    timestamps = list(filter(None, timestamps))  # filter out None values
+
+    return timestamps[0] if timestamps else None
+
+
+def find_timestamp_by_value(history_issue, property_name, property_value, array_index):
+    timestamps = [
+        {
+            "timestamp": list(history_entry.keys())[0],
+            "value": list(history_entry.values())[0]
+        }
+        for history_entry in history_issue[property_name]
+        if list(history_entry.values())[0] == property_value
+    ]
+
+    return timestamps[array_index]['timestamp'] if timestamps else None
+
+
+def find_timestamp_by_function(history_issue, property_name, property_function, array_index):
+    return property_function(history_issue[property_name])
+
+
+def create_state_configuration_object(state_configuration):
+    property_name = list(state_configuration.keys())[0]
+    return {
+        'propertyName': property_name,
+        'value': state_configuration[property_name]
+    }
