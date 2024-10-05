@@ -187,15 +187,15 @@ class JiraClient:
 
         return __get_issues(jql, use_cache, expand, page_size, start_at)
 
-    def paginate(self, jql: str, access_token: str, use_cache: bool, page_size=200) -> (List[Dict], str):
+    def paginate(self, jql: str, access_token: str, use_cache: bool, page_size=200, cache_suffix="") -> (List[Dict], str):
         page_result = self.get_issues(jql=jql, access_token=access_token, use_cache=use_cache, start_at=0,
-                                                  page_size=page_size)
+                                                  page_size=page_size, cache_suffix=cache_suffix)
         issues = []
         issues.extend(page_result.get_issues())
 
         while page_result.has_next():
             page_result = self.get_issues(jql=jql, access_token=access_token, use_cache=use_cache,
-                                                      start_at=page_result.get_next_start_at(), page_size=page_size)
+                                                      start_at=page_result.get_next_start_at(), page_size=page_size, cache_suffix=cache_suffix)
             issues.extend(page_result.get_issues())
 
         return issues, page_result.get_timestamp()
