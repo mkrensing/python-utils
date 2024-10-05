@@ -237,3 +237,42 @@ def split(text: str, seperator=" ") -> None | List[str]:
         return None
 
     return text.split(sep=seperator)
+
+def create_snapshots(history_issues, timestamps, timestamp_converter=None):
+    timestamp_converter = timestamp_converter or (lambda timestamp: timestamp)
+
+    return create_index_of_list_with_unique_keys([
+        {timestamp: [
+            create_snapshot(issue, timestamp_converter(timestamp))
+            for issue in history_issues
+            if issue['created'] <= timestamp_converter(timestamp)
+        ]}
+        for timestamp in timestamps
+    ])
+
+
+def create_snapshot(history_issue, timestamp):
+    snapshot = {}
+
+    for property_name, property_value in history_issue.items():
+        if not isinstance(property_value, list):
+            snapshot[property_name] = property_value
+        else:
+            property_values_before_timestamp = [
+                {"timestamp": list(history_entry.keys())[0], "value": list(history_entry.values())[0]}
+                for history_entry in property_value
+                if list(history_entry.keys())[0] <= timestamp
+            ]
+            if property_values_before_timestamp:
+                snapshot[property_name] = property_values_before_timestamp[-1]["value"]
+
+    snapshot["history"] = history_issue
+
+    return snapshot
+
+
+def create_index_of_list_with_unique_keys(array_of_objects):
+    index = {}
+    for obj in array_of_objects:
+        index.update(obj)
+    return index
