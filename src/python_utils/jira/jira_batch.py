@@ -54,31 +54,18 @@ class JiraBatchConfig:
 
 class JiraBatchProcessor:
 
-    def __init__(self, jira_client: JiraClient, jira_access_token: str):
+    def __init__(self, jira_client: JiraClient):
         self.jira_client = jira_client
-        self.jira_access_token = jira_access_token
 
-    def get_batch(self, batch_config: List[Dict]) -> (List[Dict[str, str]], str):
+    def get_batch(self, batch_config: List[Dict], jira_access_token: str) -> (List[Dict[str, str]], str):
         overall_issues = []
         overall_timestamp = ""
         for batch_query in batch_config:
             print(batch_query["description"])
-            (issues, timestamp) = self.paginate(batch_query["jql"], use_cache=batch_query["use_cache"])
+            (issues, timestamp) = self.jira_client.paginate(jql=batch_query["jql"], access_token=jira_access_token, use_cache=batch_query["use_cache"])
             overall_issues.extend(issues)
             overall_timestamp = timestamp
 
         return overall_issues, overall_timestamp
 
-    def paginate(self, jql: str, use_cache: bool, page_size=200) -> (List[Dict], str):
-        page_result = self.jira_client.get_issues(jql=jql, access_token=self.jira_access_token, use_cache=use_cache, start_at=0,
-                                                  page_size=page_size)
-        print(page_result.__dict__())
-        issues = []
-        issues.extend(page_result.get_issues())
 
-        while page_result.has_next():
-            page_result = self.jira_client.get_issues(jql=jql, access_token=self.jira_access_token, use_cache=use_cache,
-                                                      start_at=page_result.get_next_start_at(), page_size=page_size)
-            issues.extend(page_result.get_issues())
-
-        return issues, page_result.get_timestamp()
