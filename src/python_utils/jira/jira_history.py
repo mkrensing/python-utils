@@ -1,6 +1,7 @@
 from typing import List, Dict, Tuple
 from python_utils.dynamic_execution import DynamicExecution
 import re
+from datetime import datetime, UTC
 
 JIRA_SNAPSHOT_FIELD_CONFIGURATION_PATTERN = re.compile(r"([A-Za-z0-9_.]*)\(([A-Za-z0-9_.\s]*),?\s*(([\"\'A-Za-z0-9_.\s,]*))\)")
 
@@ -347,3 +348,18 @@ def create_state_configuration_object(state_configuration):
         'propertyName': property_name,
         'value': state_configuration[property_name]
     }
+
+
+def get_lead_time_in_days(start, end=None):
+    if not start:
+        return ""
+
+    one_day = 24 * 60 * 60  # Sekunden in einem Tag
+    end = end or datetime.now(UTC).isoformat()
+
+    start_date = datetime.fromisoformat(start)
+    end_date = datetime.fromisoformat(end)
+
+    diff_in_seconds = abs((end_date - start_date).total_seconds())
+
+    return round(diff_in_seconds / one_day)
