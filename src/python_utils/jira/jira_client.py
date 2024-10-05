@@ -157,22 +157,21 @@ class JiraClient:
     def set_test_mode(self, test_mode: bool):
         self.test_mode = test_mode
 
-    def get_issues(self, jql: str, access_token: str, use_cache: bool, expand="changelog", page_size=200, start_at=0) -> JiraPageResult:
+    def get_issues(self, jql: str, access_token: str, use_cache: bool, expand="changelog", page_size=200, start_at=0, cache_suffix="") -> JiraPageResult:
+
+        cache_id = f"{jql}_{cache_suffix}"
+
         logger.debug(
             f"get_issues(jql={jql}, use_cache={use_cache}, expand={expand}, page_size={page_size}, start_at={start_at}")
-
-        @profiling()
-        def __add_page_to_cache(jql: str, jira_page: JiraPageResult):
-            self.query_cache.add_page(jql, jira_page)
 
         @profiling()
         def __get_issues(jql: str, use_cache: bool, expand: str, page_size: int, start_at: int) -> JiraPageResult:
 
             if use_cache:
-                jira_page = self.query_cache.get_all_pages(jql, start_at)
+                jira_page = self.query_cache.get_all_pages(cache_id, start_at)
                 if jira_page:
                     logger.info(
-                        f"Return cached issues for {jql}: Total={jira_page.get_total()} / issues: {len(jira_page.get_issues())}")
+                        f"Return cached issues for {cache_id}: Total={jira_page.get_total()} / issues: {len(jira_page.get_issues())}")
                     return jira_page
 
             if self.test_mode:
@@ -181,8 +180,8 @@ class JiraClient:
 
             jira_page = self.search(jql, access_token, expand, page_size, start_at)
 
-            logger.info(f"Add {jql} to cache: {len(jira_page.get_issues())} items")
-            __add_page_to_cache(jql, jira_page)
+            logger.info(f"Add {cache_id} to cache: {len(jira_page.get_issues())} items")
+            self.query_cache.add_page(cache_id, jira_page)
 
             return jira_page
 
