@@ -243,8 +243,8 @@ class JiraClient:
 
 
     def create_jira(self, access_token: str) -> JIRA:
-        if "@" in access_token:
-            username_password = access_token.split("@")
+        if ":::" in access_token:
+            username_password = access_token.split(":::")
             return JIRA(self.hostname, basic_auth=(username_password[0], username_password[1]))
         else:
             return JIRA(self.hostname, token_auth=access_token)
