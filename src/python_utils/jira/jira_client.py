@@ -201,7 +201,7 @@ class JiraClient:
         return issues, page_result.get_timestamp()
 
     def search(self, jql: str, access_token: str, expand: str, page_size: int, start_at: int) -> JiraPageResult:
-        jira = JIRA(self.hostname, token_auth=access_token)
+        jira = self.create_jira(access_token=access_token)
         result_set = jira.search_issues(jql, expand=expand, maxResults=page_size, startAt=start_at)
         issues = [issue.raw for issue in result_set]
         return JiraPageResult(start_at=result_set.startAt, total=result_set.total, timestamp=now(), issues=issues)
@@ -215,7 +215,7 @@ class JiraClient:
 
         sprint_ids = []
         sprints = []
-        jira = JIRA(self.hostname, token_auth=access_token)
+        jira = self.create_jira(access_token=access_token)
         boards = self.get_boards_for_project(jira, project_id, name_filter)
         for board in boards:
             for sprint in [sprint.raw for sprint in jira.sprints(board_id=int(board["id"]))]:
@@ -242,5 +242,11 @@ class JiraClient:
             self.sprint_cache.close()
 
 
+    def create_jira(self, access_token: str) -> JIRA:
+        if "@" in access_token:
+            username_password = access_token.split("@")
+            return JIRA(self.hostname, basic_auth=(username_password[0], username_password[1]))
+        else:
+            return JIRA(self.hostname, token_auth=access_token)
 
 
