@@ -1,7 +1,8 @@
 from typing import List, Dict, Tuple
 from python_utils.dynamic_execution import DynamicExecution
+from python_utils.timestamp import now
 import re
-from datetime import datetime, UTC, timedelta
+from datetime import datetime, UTC, timedelta, timezone
 
 JIRA_SNAPSHOT_FIELD_CONFIGURATION_PATTERN = re.compile(r"([A-Za-z0-9_.]*)\(([A-Za-z0-9_.\s]*),?\s*(([\"\'A-Za-z0-9_.\s,]*))\)")
 
@@ -350,7 +351,7 @@ def create_state_configuration_object(state_configuration):
     }
 
 
-def get_lead_time_in_days(start, end=None, including_weekend=True) -> int:
+def get_lead_time_in_days(start: str, end: str=None, including_weekend=True) -> int:
     if including_weekend:
         return get_lead_time_in_days_including_weekend(start, end)
     else:
@@ -361,10 +362,16 @@ def get_lead_time_in_days_including_weekend(start, end=None) -> int:
         return -1
 
     one_day = 24 * 60 * 60  # Sekunden in einem Tag
-    end = end or datetime.now(UTC).isoformat()
+    end = end or now()
 
     start_date = datetime.fromisoformat(start)
     end_date = datetime.fromisoformat(end)
+
+    if start_date.tzinfo is None:
+        start_date = start_date.replace(tzinfo=timezone.utc)
+
+    if end_date.tzinfo is None:
+        end_date = end_date.replace(tzinfo=timezone.utc)
 
     diff_in_seconds = abs((end_date - start_date).total_seconds())
 
@@ -376,7 +383,7 @@ def get_lead_time_in_days_without_weekend(start, end=None) -> int:
         return -1
 
     one_day = timedelta(days=1)
-    end = end or datetime.now().isoformat()
+    end = end or datetime.now(UTC).isoformat()
 
     start_date = datetime.fromisoformat(start)
     end_date = datetime.fromisoformat(end)
