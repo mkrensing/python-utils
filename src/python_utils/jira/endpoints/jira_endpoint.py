@@ -62,10 +62,13 @@ def get_sprints_for_project(project_id: str, name_filter: str, activated_date: s
 def post_search():
     try:
         config = JiraSearchConfig(request.json)
+        expand = request.args.get("expand", "")
+
+        print(f"search with config: {config.__dict__}")
         if not config.is_valid():
             return response_json({"error": f"Invalid request body. Expected JiraSearchConfig"}), 400
 
-        (issues, timestamp) = jira_client.paginate(jql=config.get_jql(), access_token=get_access_token(), use_cache=config.is_use_cache(), page_size=config.get_page_size())
+        (issues, timestamp) = jira_client.paginate(jql=config.get_jql(), access_token=get_access_token(), expand=expand, use_cache=config.is_use_cache(), page_size=config.get_page_size())
         return response_json({ "timestamp": timestamp, "issues": issues })
 
     except Exception as e:
