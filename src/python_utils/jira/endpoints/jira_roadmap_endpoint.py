@@ -24,9 +24,9 @@ def create_jira_client(hostname: str, cache_directory: str, test_mode: str) -> J
 
 jira_client = create_jira_client()
 
-@jira_roadmap_endpoint.route('/roadmap/<int: plan_id>/<int: scenario_id>', methods=["GET"])
+@jira_roadmap_endpoint.route('/roadmap/<plan_id>/<scenario_id>', methods=["GET"])
 @token_required()
-def get_roadmap(project_id: str, plan_id: int, scenario_id: int):
+def get_roadmap(project_id: str, plan_id: str, scenario_id: str):
 
     force_reload = (request.args["force_reload"] == "true") if "force_reload" in request.args else False
     versions_filters = request.args.getlist("fixVersions")
@@ -34,6 +34,6 @@ def get_roadmap(project_id: str, plan_id: int, scenario_id: int):
     print(f"get_roadmap: {versions_filters}")
 
     return response_json(
-        jira_client.get_roadmap(project_id, plan_id=plan_id, scenario_id=scenario_id, fix_version_filters=versions_filters, access_token=get_access_token()))
+        jira_client.get_roadmap(project_id, plan_id=int(plan_id), scenario_id=int(scenario_id), fix_version_filters=versions_filters, access_token=get_access_token()))
 
 
