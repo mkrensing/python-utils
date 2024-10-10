@@ -282,9 +282,12 @@ class JiraClient:
         return versions
 
 
-    def get_roadmap(self, project_id: str, plan_id: int, scenario_id: int, fix_version_filters: List[str], access_token: str) -> (List[Dict[str, str]], str):
+    def get_roadmap(self, project_id: str, plan_id: int, scenario_id: int, fix_version_filters: List[str], access_token: str, use_cache=True) -> (List[Dict[str, str]], str):
 
-        roadmap = self.roadmap_cache.get_roadmap(project_id, plan_id, scenario_id)
+        roadmap = None
+        if use_cache:
+            roadmap = self.roadmap_cache.get_roadmap(project_id, plan_id, scenario_id)
+
         if not roadmap:
             roadmap = self.get_roadmap_from_jira_backend(plan_id, scenario_id, access_token)
             self.roadmap_cache.add_roadmap(project_id, plan_id, scenario_id, roadmap["issues"])
@@ -301,7 +304,7 @@ class JiraClient:
         for index, roadmap_issue in enumerate(roadmap_issues):
             issues.append(convert_roadmap_issue_to_issue(project_id, roadmap_issue))
 
-        return issues
+        return { "issues": issues, "timestamp": roadmap["timestamp"] }
 
     def get_roadmap_from_jira_backend(self, plan_id: int, scenario_id: int, access_token: str) -> Dict[str, str]:
 

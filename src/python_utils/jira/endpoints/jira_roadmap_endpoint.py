@@ -1,5 +1,7 @@
 import os
 import traceback
+from wsgiref.util import request_uri
+
 from flask import Blueprint, request
 from python_utils.jira.jira_client import JiraClient
 from python_utils.flask.endpoint import response_json, destroy_endpoint, init_endpoint, response_cookie
@@ -28,12 +30,11 @@ jira_client = create_jira_client()
 @token_required()
 def get_roadmap(project_id: str, plan_id: str, scenario_id: str):
 
-    force_reload = (request.args["force_reload"] == "true") if "force_reload" in request.args else False
+    use_cache = request.args.get("useCache", "false").lower() in ["true", "1"]
     versions_filters = request.args.getlist("fixVersions")
 
-    print(f"get_roadmap: {versions_filters}")
+    roadmap = jira_client.get_roadmap(project_id, plan_id=int(plan_id), scenario_id=int(scenario_id), fix_version_filters=versions_filters, access_token=get_access_token(), use_cache=use_cache)
 
-    roadmap = jira_client.get_roadmap(project_id, plan_id=int(plan_id), scenario_id=int(scenario_id), fix_version_filters=versions_filters, access_token=get_access_token())
     return response_json(roadmap)
 
 
