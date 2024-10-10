@@ -174,14 +174,14 @@ class RoadmapCache:
     def create_roadmap_id(project_id: str, plan_id: int, scenario_id: int) -> str:
         return f"{project_id}_{plan_id}_{scenario_id}"
 
-    def get_roadmap(self, project_id: str, plan_id: int, scenario_id: int) -> List[Dict[str, str]]:
+    def get_roadmap(self, project_id: str, plan_id: int, scenario_id: int) -> Dict[str, str]:
         cached_queries = Query()
         result = self.db.search((cached_queries.id == self.create_roadmap_id(project_id, plan_id, scenario_id)) & (
                         cached_queries.timestamp == self.current_timestamp()))
         if not result:
             return None
 
-        return result[0]["roadmap"]
+        return { "issues": result[0]["roadmap"], "timestamp": result[0]["timestamp"] }
 
     def add_roadmap(self, project_id: str, plan_id: int, scenario_id: int, roadmap: List[Dict[str, str]]):
         cached_queries = Query()
@@ -282,27 +282,28 @@ class JiraClient:
         return versions
 
 
-    def get_roadmap(self, project_id: str, plan_id: int, scenario_id: int, fix_version_filters: List[str], access_token: str) -> List[Dict[str, str]]:
+    def get_roadmap(self, project_id: str, plan_id: int, scenario_id: int, fix_version_filters: List[str], access_token: str) -> (List[Dict[str, str]], str):
 
         roadmap = self.roadmap_cache.get_roadmap(project_id, plan_id, scenario_id)
         if not roadmap:
             roadmap = self.get_roadmap_from_jira_backend(plan_id, scenario_id, access_token)
-            self.roadmap_cache.add_roadmap(project_id, plan_id, scenario_id, roadmap)
+            self.roadmap_cache.add_roadmap(project_id, plan_id, scenario_id, roadmap["issues"])
 
         unreleased_versions = self.get_unreleased_versions(project_id, access_token)
         version_ids = get_matching_version_ids(unreleased_versions, fix_version_filters)
-        roadmap = filter(
+        roadmap_issues = roadmap["issues"]
+        roadmap_issues = filter(
             lambda issue: has_fix_versions(issue, version_ids),
-            roadmap)
+            roadmap_issues)
 
-        roadmap = sorted(roadmap, key=lambda issue: issue["values"]["lexoRank"])
+        roadmap_issues = sorted(roadmap_issues, key=lambda issue: issue["values"]["lexoRank"])
         issues = []
-        for index, roadmap_issue in enumerate(roadmap):
+        for index, roadmap_issue in enumerate(roadmap_issues):
             issues.append(convert_roadmap_issue_to_issue(project_id, roadmap_issue))
 
         return issues
 
-    def get_roadmap_from_jira_backend(self, plan_id: int, scenario_id: int, access_token: str) -> List[Dict[str, str]]:
+    def get_roadmap_from_jira_backend(self, plan_id: int, scenario_id: int, access_token: str) -> Dict[str, str]:
 
         headers = {
             "Accept": "application/json",
@@ -317,7 +318,7 @@ class JiraClient:
         response.raise_for_status()
 
         roadmap = response.json()
-        return roadmap["issues"]
+        return { "issues": roadmap["issues"], "timestamp": now() }
 
 
     def search(self, jql: str, access_token: str, expand: str, page_size: int, start_at: int) -> JiraPageResult:

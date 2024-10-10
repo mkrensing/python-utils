@@ -33,7 +33,7 @@ def get_roadmap(project_id: str, plan_id: str, scenario_id: str):
 
     print(f"get_roadmap: {versions_filters}")
 
-    return response_json(
-        jira_client.get_roadmap(project_id, plan_id=int(plan_id), scenario_id=int(scenario_id), fix_version_filters=versions_filters, access_token=get_access_token()))
+    roadmap = jira_client.get_roadmap(project_id, plan_id=int(plan_id), scenario_id=int(scenario_id), fix_version_filters=versions_filters, access_token=get_access_token())
+    return response_json(roadmap)
 
 
