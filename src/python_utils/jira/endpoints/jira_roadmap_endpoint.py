@@ -24,7 +24,7 @@ def create_jira_client(hostname: str, cache_directory: str, test_mode: str) -> J
 
 jira_client = create_jira_client()
 
-@jira_roadmap_endpoint.route('/roadmap/<plan_id>/<scenario_id>', methods=["GET"])
+@jira_roadmap_endpoint.route('/roadmap/<project_id>/<plan_id>/<scenario_id>', methods=["GET"])
 @token_required()
 def get_roadmap(project_id: str, plan_id: str, scenario_id: str):
 
