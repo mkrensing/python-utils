@@ -35,13 +35,11 @@ class JiraSearchConfig:
 
 @inject_environment(
     {"JIRA_HOSTNAME": "",
-     "QUERY_CACHE_FILENAME": "",
-     "SPRINT_CACHE_FILENAME": "",
+     "CACHE_DIRECTORY": "",
      "TEST_MODE": "False"},
     required=True)
-def create_jira_client(hostname: str, query_cache_filename: str, sprint_cache_filename, test_mode: str) -> JiraClient:
-    return JiraClient(hostname=hostname, query_cache_filename=query_cache_filename,
-                      sprint_cache_filename=sprint_cache_filename,
+def create_jira_client(hostname: str, cache_directory: str, test_mode: str) -> JiraClient:
+    return JiraClient(hostname=hostname, cache_directory=cache_directory,
                       test_mode=test_mode.lower() in ["true", "1"])
 
 
