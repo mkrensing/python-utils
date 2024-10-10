@@ -10,7 +10,7 @@ from python_utils.jira.jira_security import read_tokens, write_tokens, register_
 from typing import Dict
 
 
-jira_roadmap_endpoint = Blueprint('jira_endpoint', __name__, url_prefix='/rest/jira')
+jira_roadmap_endpoint = Blueprint('jira_roadmap_endpoint', __name__, url_prefix='/rest/jira')
 
 @inject_environment(
     {"JIRA_HOSTNAME": "",
