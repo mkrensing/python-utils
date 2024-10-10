@@ -37,4 +37,8 @@ def get_roadmap(project_id: str, plan_id: str, scenario_id: str):
 
     return response_json(roadmap)
 
-
+@jira_roadmap_endpoint.route('/roadmap/rank/<plan_id>/<scenario_id>/<anchor_issue_id>/<issue_id>', methods=["GET"])
+@token_required()
+def change_roadmap_issue_rank(plan_id: str, scenario_id: str, anchor_issue_id: str, issue_id: str):
+    status = jira_client.change_roadmap_issue_rank(int(plan_id), int(scenario_id), int(anchor_issue_id), int(issue_id), access_token=get_access_token())
+    return response_json(status)

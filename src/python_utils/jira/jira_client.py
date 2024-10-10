@@ -306,6 +306,19 @@ class JiraClient:
 
         return { "issues": issues, "timestamp": roadmap["timestamp"] }
 
+    def change_roadmap_issue_rank(self, plan_id: int, scenario_id: int, anchor_issue_id: int, issue_id: int, access_token: str, operation="AFTER"):
+        headers = {
+            "Accept": "application/json",
+            "Authorization": f"Bearer {access_token}"
+        }
+
+        data = { "operations":[{"anchor":f"{anchor_issue_id}","itemKeys":[f"{issue_id}"],"operationType":f"{operation}"}],"planId":int(plan_id),"scenarioId":int(scenario_id)}
+
+        response = requests.post(f"{self.hostname}/rest/jpo/1.0/issues/rank", headers=headers, json=data,
+                                 allow_redirects=False)
+        response.raise_for_status()
+        return { "status": response.json() }
+
     def get_roadmap_from_jira_backend(self, plan_id: int, scenario_id: int, access_token: str) -> Dict[str, str]:
 
         headers = {
@@ -394,6 +407,7 @@ def has_fix_versions(issue: Dict, fix_versions_filters: List[str]) -> bool:
 
 def convert_roadmap_issue_to_issue(project_id: str, roadmap_issue: Dict) -> Dict:
     return { "key": f"{project_id}-{roadmap_issue['issueKey']}",
+             "id": roadmap_issue["id"],
              "summary": roadmap_issue["values"]["summary"],
              "labels": roadmap_issue["values"]["labels"] if "labels" in roadmap_issue["values"] else [],
              "issuetype": roadmap_issue["values"]["type"],
